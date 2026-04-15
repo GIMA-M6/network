@@ -6,18 +6,25 @@ from pathlib import Path # Add this import!
 
 app = FastAPI()
 
+origins = [
+    "https://gima-m6.github.io", # Your live frontend
+    "http://localhost:8000",     # For local testing
+    "*"                          # Fallback to allow all during development
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://gima-m6.github.io/utoerist.github.io/"], 
-    allow_methods=["https://gima-m6.github.io/utoerist.github.io/"],
-    allow_headers=["https://gima-m6.github.io/utoerist.github.io/"],
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 1. Dynamically find the folder where api.py is located
 BASE_DIR = Path(__file__).resolve().parent
 
 # 2. Build the exact path to the file
-graph_path = BASE_DIR / "utrecht_network.graphml"
+graph_path = BASE_DIR / "utrecht_network_light.graphml"
 
 # 3. Check if it actually exists before loading to give a better error message
 if not graph_path.exists():
@@ -27,11 +34,25 @@ print(f"Loading map from: {graph_path}")
 G = ox.load_graphml(graph_path)
 print("Map loaded!")
 
+def find_nearest_node(graph, target_lon, target_lat):
+    nearest_node = None
+    min_dist = float('inf')
+    
+    for node, data in graph.nodes(data=True):
+        if 'x' in data and 'y' in data:
+            # Formule (Pythagoras)
+            dist = (data['x'] - target_lon)**2 + (data['y'] - target_lat)**2
+            if dist < min_dist:
+                min_dist = dist
+                nearest_node = node
+                
+    return nearest_node
+
 @app.get("/get-route")
 def calculate_route(start_lat: float, start_lon: float, end_lat: float, end_lon: float):
     # 1. Find the nearest network nodes to the user's clicks
-    start_node = ox.nearest_nodes(G, start_lon, start_lat)
-    end_node = ox.nearest_nodes(G, end_lon, end_lat)
+    start_node = ox.nearest_node(G, start_lon, start_lat)
+    end_node = ox.nearest_node(G, end_lon, end_lat)
     
     # 2. Calculate shortest path (Dijkstra)
     try:
