@@ -2,21 +2,29 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import osmnx as ox
 import networkx as nx
+from pathlib import Path # Add this import!
 
 app = FastAPI()
 
-# CRITICAL: CORS (Cross-Origin Resource Sharing)
-# This allows your GitHub Pages website to talk to this server without getting blocked.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, change "*" to your GitHub Pages URL
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["https://utoerist.github.io/"], 
+    allow_methods=["https://utoerist.github.io/"],
+    allow_headers=["https://utoerist.github.io/"],
 )
 
-# Load the map into memory when the server starts
-print("Loading map...")
-G = ox.load_graphml("utrecht_network.graphml")
+# 1. Dynamically find the folder where api.py is located
+BASE_DIR = Path(__file__).resolve().parent
+
+# 2. Build the exact path to the file
+graph_path = BASE_DIR / "utrecht_network.graphml"
+
+# 3. Check if it actually exists before loading to give a better error message
+if not graph_path.exists():
+    raise FileNotFoundError(f"Cannot find the map file! I looked exactly here: {graph_path}")
+
+print(f"Loading map from: {graph_path}")
+G = ox.load_graphml(graph_path)
 print("Map loaded!")
 
 @app.get("/get-route")
