@@ -1,5 +1,4 @@
 fastapi
-fastapi.middleware.cors
 uvicorn
 osmnx
 networkx
