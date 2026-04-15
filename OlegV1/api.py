@@ -8,9 +8,9 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://utoerist.github.io/"], 
-    allow_methods=["https://utoerist.github.io/"],
-    allow_headers=["https://utoerist.github.io/"],
+    allow_origins=["https://gima-m6.github.io/utoerist.github.io/"], 
+    allow_methods=["https://gima-m6.github.io/utoerist.github.io/"],
+    allow_headers=["https://gima-m6.github.io/utoerist.github.io/"],
 )
 
 # 1. Dynamically find the folder where api.py is located
