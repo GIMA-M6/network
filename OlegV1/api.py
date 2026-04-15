@@ -6,11 +6,18 @@ from pathlib import Path # Add this import!
 
 app = FastAPI()
 
+origins = [
+    "https://gima-m6.github.io", # Your live frontend
+    "http://localhost:8000",     # For local testing
+    "*"                          # Fallback to allow all during development
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://gima-m6.github.io/utoerist.github.io/"], 
-    allow_methods=["https://gima-m6.github.io/utoerist.github.io/"],
-    allow_headers=["https://gima-m6.github.io/utoerist.github.io/"],
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 1. Dynamically find the folder where api.py is located
