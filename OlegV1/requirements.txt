@@ -3,3 +3,4 @@ uvicorn
 osmnx
 networkx
 pathlib
+scikit-learn
