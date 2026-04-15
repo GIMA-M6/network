@@ -17,7 +17,7 @@ app.add_middleware(
 BASE_DIR = Path(__file__).resolve().parent
 
 # 2. Build the exact path to the file
-graph_path = BASE_DIR / "utrecht_network.graphml"
+graph_path = BASE_DIR / "utrecht_network_light.graphml"
 
 # 3. Check if it actually exists before loading to give a better error message
 if not graph_path.exists():
