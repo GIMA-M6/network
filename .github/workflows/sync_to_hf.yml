@@ -6,10 +6,30 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Push to Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git subtree push --prefix OlegV1 --force https://OlegBergs:$HF_TOKEN@huggingface.co/spaces/OlegBergs/route_backend_api main
+        run: |
+          # 1. Ga naar de map van je API
+          cd OlegV1
+          
+          # 2. Maak van deze map een tijdelijke git repo
+          git init
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          
+          # 3. Voeg alle bestanden toe en commit ze
+          git add .
+          git commit -m "Deploy from GitHub Action"
+          
+          # 4. Forceer de push naar Hugging Face
+          git push --force https://OlegBergs:$HF_TOKEN@huggingface.co/spaces/OlegBergs/route_backend_api main
+
+
+
+
+
