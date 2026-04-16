@@ -7,7 +7,7 @@ on:
       - main
     # Optional: Only trigger if files in the OlegV1 folder actually change
     paths:
-      - 'OlegV1/**' 
+      - 'hf_deploy/**' 
   
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch: 
@@ -33,7 +33,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           # 1. Extract the OlegV1 folder into a temporary local branch called 'hf-deploy'
-          git subtree split --prefix OlegV1 -b hf-deploy
+          git subtree split --prefix hf_deploy -b hf-deploy
           
           # 2. Force push that branch to the remote main branch on Hugging Face
           git push https://OlegBergs:${HF_TOKEN}@huggingface.co/spaces/OlegBergs/route_backend_api hf-deploy:main --force
