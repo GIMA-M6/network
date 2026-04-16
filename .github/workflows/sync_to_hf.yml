@@ -14,10 +14,17 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          # Ga de submap in
           cd OlegV1
+          
+          # Maak er een tijdelijke eigen repo van
           git init
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+          
+          # Voeg alles toe en commit lokaal in de runner
           git add .
-          git commit -m "Deploy from GitHub"
-          git push --force https://OlegBergs:$HF_TOKEN@huggingface.co/spaces/OlegBergs/route_backend_api main
+          git commit -m "Deploy"
+          
+          # Forceer de push (dit overschrijft de foutmelding die je nu krijgt)
+          git push --force https://OlegBergs:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/OlegBergs/route_backend_api main
