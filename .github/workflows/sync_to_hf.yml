@@ -14,17 +14,10 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Ga naar de map waar je API code staat
           cd OlegV1
-          
-          # 2. Maak een tijdelijke git repo in deze map
           git init
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          
-          # 3. Voeg alle bestanden (Dockerfile, app.py, etc) toe
           git add .
-          git commit -m "Deploy from GitHub Action"
-          
-          # 4. Forceer de push naar Hugging Face (overschrijft bestaande files)
+          git commit -m "Deploy fresh"
           git push --force https://OlegBergs:$HF_TOKEN@huggingface.co/spaces/OlegBergs/route_backend_api main
