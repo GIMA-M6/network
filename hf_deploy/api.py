@@ -51,8 +51,8 @@ def find_nearest_node(graph, target_lon, target_lat):
 @app.get("/get-route")
 def calculate_route(start_lat: float, start_lon: float, end_lat: float, end_lon: float):
     # 1. Find the nearest network nodes to the user's clicks
-    start_node = find_nearest_node(G, start_lon, start_lat)
-    end_node = find_nearest_node(G, end_lon, end_lat)
+    start_node = ox.nearest_node(G, start_lon, start_lat)
+    end_node = ox.nearest_node(G, end_lon, end_lat)
     
     # 2. Calculate shortest path (Dijkstra)
     try:
