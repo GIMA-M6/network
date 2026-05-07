@@ -20,19 +20,31 @@ import osmnx as ox
 
 def load_study_area():
     """
-    Load your study area polygon.
-    Option A: from GeoJSON/shapefile (recommended)
-    Option B: from hard-coded bbox (fallback)
+    Load Utrecht administrative boundary from OSM.
+    Returns the polygon for use in other data loading functions.
     """
+    from shapely.geometry import box
+    
     try:
-        sa = gpd.read_file("../data/study_area.geojson")
-        polygon = sa.geometry.iloc[0]
-        print("✅ Loaded study area from ../data/study_area.geojson")
+        # Query Utrecht city boundary from OSM (admin_level 8 = municipality)
+        tags = {"boundary": "administrative", "admin_level": "8", "name": "Utrecht"}
+        gdf = ox.features_from_place("Utrecht, Netherlands", tags)
+        
+        if len(gdf) > 0:
+            # Handle MultiPolygon by taking the largest polygon
+            geometry = gdf.geometry.iloc[0]
+            if geometry.geom_type == "MultiPolygon":
+                polygon = max(geometry.geoms, key=lambda x: x.area)
+            else:
+                polygon = geometry
+            print("✅ Loaded Utrecht boundary from OSM")
+            return polygon
     except Exception as e:
-        from shapely.geometry import box
-        # Fallback: Utrecht-ish bbox (adjust if needed)
-        polygon = box(4.98, 52.05, 5.18, 52.17)
-        print(f"⚠️ Using fallback bbox for study area: {e}")
+        print(f"⚠️ OSM query failed, using fallback bbox: {e}")
+    
+    # Fallback: Utrecht city proper bbox (minx, miny, maxx, maxy)
+    polygon = box(5.05, 52.05, 5.20, 52.15)
+    print("✅ Using Utrecht bbox: (5.05, 52.05, 5.20, 52.15)")
     return polygon
 
 
