@@ -37,14 +37,14 @@ def load_study_area():
                 polygon = max(geometry.geoms, key=lambda x: x.area)
             else:
                 polygon = geometry
-            print("✅ Loaded Utrecht boundary from OSM")
+            print("Loaded Utrecht boundary from OSM")
             return polygon
     except Exception as e:
-        print(f"⚠️ OSM query failed, using fallback bbox: {e}")
+        print(f"OSM query failed, using fallback bbox: {e}")
     
     # Fallback: Utrecht city proper bbox (minx, miny, maxx, maxy)
     polygon = box(5.05, 52.05, 5.20, 52.15)
-    print("✅ Using Utrecht bbox: (5.05, 52.05, 5.20, 52.15)")
+    print("Using Utrecht bbox: (5.05, 52.05, 5.20, 52.15)")
     return polygon
 
 
@@ -80,7 +80,7 @@ def load_osm_features(polygon):
         "osm_boulevard": boulevards
     }
 
-    print("✅ Loaded OSM features")
+    print("Loaded OSM features")
     return datasets
 
 
@@ -104,7 +104,7 @@ def load_bgt_bag_features(polygon):
         benches = benches[benches["bgt_functie"] == "zitbank"]
         datasets["bgt_benches"] = benches
     except Exception as e:
-        print(f"⚠️ Failed to load BGT benches: {e}")
+        print(f"Failed to load BGT benches: {e}")
         datasets["bgt_benches"] = gpd.GeoDataFrame()
 
     # BGT water
@@ -112,7 +112,7 @@ def load_bgt_bag_features(polygon):
         water = gpd.read_file(BGT_URL, layer="waterdeel", bbox=polygon.bounds)
         datasets["bgt_water"] = water
     except Exception as e:
-        print(f"⚠️ Failed to load BGT water: {e}")
+        print(f"Failed to load BGT water: {e}")
         datasets["bgt_water"] = gpd.GeoDataFrame()
 
     # BGT green
@@ -120,7 +120,7 @@ def load_bgt_bag_features(polygon):
         green = gpd.read_file(BGT_URL, layer="begroeidterreindeel", bbox=polygon.bounds)
         datasets["bgt_green"] = green
     except Exception as e:
-        print(f"⚠️ Failed to load BGT green: {e}")
+        print(f"Failed to load BGT green: {e}")
         datasets["bgt_green"] = gpd.GeoDataFrame()
 
     # BAG oude gebouwen
@@ -129,10 +129,10 @@ def load_bgt_bag_features(polygon):
         oude = bag[bag["oorspronkelijk_bouwjaar"] < 1900]
         datasets["bag_oude_gebouwen"] = oude
     except Exception as e:
-        print(f"⚠️ Failed to load BAG old buildings: {e}")
+        print(f"Failed to load BAG old buildings: {e}")
         datasets["bag_oude_gebouwen"] = gpd.GeoDataFrame()
 
-    print("✅ Loaded BGT + BAG features")
+    print("Loaded BGT + BAG features")
     return datasets
 
 
@@ -165,7 +165,7 @@ def load_atlas_rivm_features(polygon):
             gdf = gpd.read_file(ATLAS_URL, layer=layer, bbox=polygon.bounds)
             datasets[key] = gdf
         except Exception as e:
-            print(f"⚠️ Failed to load {key} ({layer}): {e}")
+            print(f"Failed to load {key} ({layer}): {e}")
             datasets[key] = gpd.GeoDataFrame()
 
     # RIVM noise + air (layer names may need adjustment)
@@ -173,17 +173,17 @@ def load_atlas_rivm_features(polygon):
         noise = gpd.read_file(RIVM_URL, layer="geluid_weg", bbox=polygon.bounds)
         datasets["rivm_noise"] = noise
     except Exception as e:
-        print(f"⚠️ Failed to load RIVM noise: {e}")
+        print(f"Failed to load RIVM noise: {e}")
         datasets["rivm_noise"] = gpd.GeoDataFrame()
 
     try:
         air = gpd.read_file(RIVM_URL, layer="luchtkwaliteit", bbox=polygon.bounds)
         datasets["rivm_air"] = air
     except Exception as e:
-        print(f"⚠️ Failed to load RIVM air: {e}")
+        print(f"Failed to load RIVM air: {e}")
         datasets["rivm_air"] = gpd.GeoDataFrame()
 
-    print("✅ Loaded Atlas Leefomgeving + RIVM features")
+    print("Loaded Atlas Leefomgeving + RIVM features")
     return datasets
 
 
@@ -210,7 +210,7 @@ def load_utrechtopen_erfgoed_features(polygon):
         )
         datasets["utrecht_beeldbepalend_1"] = beeld1
     except Exception as e:
-        print(f"⚠️ Failed to load Utrecht beeldbepalend_pand: {e}")
+        print(f"Failed to load Utrecht beeldbepalend_pand: {e}")
         datasets["utrecht_beeldbepalend_1"] = gpd.GeoDataFrame()
 
     try:
@@ -221,7 +221,7 @@ def load_utrechtopen_erfgoed_features(polygon):
         )
         datasets["utrecht_beeldbepalend_2"] = beeld2
     except Exception as e:
-        print(f"⚠️ Failed to load Utrecht beeldbepalende_panden: {e}")
+        print(f"Failed to load Utrecht beeldbepalende_panden: {e}")
         datasets["utrecht_beeldbepalend_2"] = gpd.GeoDataFrame()
 
     # Erfgoedregistratie – gemeentelijk erfgoed
@@ -233,10 +233,10 @@ def load_utrechtopen_erfgoed_features(polygon):
         )
         datasets["erfgoed_gemeentelijk"] = erfgoed
     except Exception as e:
-        print(f"⚠️ Failed to load Erfgoed gemeentelijk: {e}")
+        print(f"Failed to load Erfgoed gemeentelijk: {e}")
         datasets["erfgoed_gemeentelijk"] = gpd.GeoDataFrame()
 
-    print("✅ Loaded UtrechtOpen + Erfgoed features")
+    print("Loaded UtrechtOpen + Erfgoed features")
     return datasets
 
 
