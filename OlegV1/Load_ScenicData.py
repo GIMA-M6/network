@@ -56,17 +56,17 @@ def load_osm_features(polygon):
     boulevards = ox.features_from_polygon(polygon, {"highway": "pedestrian"})
 
     datasets = {
-        "osm_artwork": pois[pois.get("tourism") == "artwork"],
-        "osm_memorial": pois[pois.get("historic") == "memorial"],
-        "osm_viewpoint": pois[pois.get("tourism") == "viewpoint"],
-        "osm_fountain": pois[pois.get("amenity") == "fountain"],
-        "osm_ruins": pois[pois.get("historic") == "ruins"],
-        "osm_theatre": pois[pois.get("amenity") == "theatre"],
-        "osm_museum": pois[pois.get("tourism") == "museum"],
-        "osm_leisure": pois[pois.get("leisure").notna()],
-        "osm_benches": pois[pois.get("amenity") == "bench"],
-        "osm_boulevard": boulevards
-    }
+    "osm_artwork": pois[pois["tourism"] == "artwork"] if "tourism" in pois.columns else gpd.GeoDataFrame(),
+    "osm_memorial": pois[pois["historic"] == "memorial"] if "historic" in pois.columns else gpd.GeoDataFrame(),
+    "osm_viewpoint": pois[pois["tourism"] == "viewpoint"] if "tourism" in pois.columns else gpd.GeoDataFrame(),
+    "osm_fountain": pois[pois["amenity"] == "fountain"] if "amenity" in pois.columns else gpd.GeoDataFrame(),
+    "osm_ruins": pois[pois["historic"] == "ruins"] if "historic" in pois.columns else gpd.GeoDataFrame(),
+    "osm_theatre": pois[pois["amenity"] == "theatre"] if "amenity" in pois.columns else gpd.GeoDataFrame(),
+    "osm_museum": pois[pois["tourism"] == "museum"] if "tourism" in pois.columns else gpd.GeoDataFrame(),
+    "osm_leisure": pois[pois["leisure"].notna()] if "leisure" in pois.columns else gpd.GeoDataFrame(),
+    "osm_benches": pois[pois["amenity"] == "bench"] if "amenity" in pois.columns else gpd.GeoDataFrame(),
+    "osm_boulevard": boulevards
+}
 
     print("✅ Loaded OSM features")
     return datasets
