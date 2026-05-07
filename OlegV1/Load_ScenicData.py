@@ -28,11 +28,11 @@ def load_study_area():
         sa = gpd.read_file("../data/study_area.geojson")
         polygon = sa.geometry.iloc[0]
         print("✅ Loaded study area from ../data/study_area.geojson")
-    except Exception:
+    except Exception as e:
         from shapely.geometry import box
         # Fallback: Utrecht-ish bbox (adjust if needed)
         polygon = box(4.98, 52.05, 5.18, 52.17)
-        print("⚠️ Using fallback bbox for study area")
+        print(f"⚠️ Using fallback bbox for study area: {e}")
     return polygon
 
 
@@ -56,17 +56,17 @@ def load_osm_features(polygon):
     boulevards = ox.features_from_polygon(polygon, {"highway": "pedestrian"})
 
     datasets = {
-    "osm_artwork": pois[pois["tourism"] == "artwork"] if "tourism" in pois.columns else gpd.GeoDataFrame(),
-    "osm_memorial": pois[pois["historic"] == "memorial"] if "historic" in pois.columns else gpd.GeoDataFrame(),
-    "osm_viewpoint": pois[pois["tourism"] == "viewpoint"] if "tourism" in pois.columns else gpd.GeoDataFrame(),
-    "osm_fountain": pois[pois["amenity"] == "fountain"] if "amenity" in pois.columns else gpd.GeoDataFrame(),
-    "osm_ruins": pois[pois["historic"] == "ruins"] if "historic" in pois.columns else gpd.GeoDataFrame(),
-    "osm_theatre": pois[pois["amenity"] == "theatre"] if "amenity" in pois.columns else gpd.GeoDataFrame(),
-    "osm_museum": pois[pois["tourism"] == "museum"] if "tourism" in pois.columns else gpd.GeoDataFrame(),
-    "osm_leisure": pois[pois["leisure"].notna()] if "leisure" in pois.columns else gpd.GeoDataFrame(),
-    "osm_benches": pois[pois["amenity"] == "bench"] if "amenity" in pois.columns else gpd.GeoDataFrame(),
-    "osm_boulevard": boulevards
-}
+        "osm_artwork": pois[pois["tourism"] == "artwork"] if "tourism" in pois.columns else gpd.GeoDataFrame(),
+        "osm_memorial": pois[pois["historic"] == "memorial"] if "historic" in pois.columns else gpd.GeoDataFrame(),
+        "osm_viewpoint": pois[pois["tourism"] == "viewpoint"] if "tourism" in pois.columns else gpd.GeoDataFrame(),
+        "osm_fountain": pois[pois["amenity"] == "fountain"] if "amenity" in pois.columns else gpd.GeoDataFrame(),
+        "osm_ruins": pois[pois["historic"] == "ruins"] if "historic" in pois.columns else gpd.GeoDataFrame(),
+        "osm_theatre": pois[pois["amenity"] == "theatre"] if "amenity" in pois.columns else gpd.GeoDataFrame(),
+        "osm_museum": pois[pois["tourism"] == "museum"] if "tourism" in pois.columns else gpd.GeoDataFrame(),
+        "osm_leisure": pois[pois["leisure"].notna()] if "leisure" in pois.columns else gpd.GeoDataFrame(),
+        "osm_benches": pois[pois["amenity"] == "bench"] if "amenity" in pois.columns else gpd.GeoDataFrame(),
+        "osm_boulevard": boulevards
+    }
 
     print("✅ Loaded OSM features")
     return datasets
@@ -91,21 +91,24 @@ def load_bgt_bag_features(polygon):
         benches = gpd.read_file(BGT_URL, layer="meubilair", bbox=polygon.bounds)
         benches = benches[benches["bgt_functie"] == "zitbank"]
         datasets["bgt_benches"] = benches
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Failed to load BGT benches: {e}")
         datasets["bgt_benches"] = gpd.GeoDataFrame()
 
     # BGT water
     try:
         water = gpd.read_file(BGT_URL, layer="waterdeel", bbox=polygon.bounds)
         datasets["bgt_water"] = water
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Failed to load BGT water: {e}")
         datasets["bgt_water"] = gpd.GeoDataFrame()
 
     # BGT green
     try:
         green = gpd.read_file(BGT_URL, layer="begroeidterreindeel", bbox=polygon.bounds)
         datasets["bgt_green"] = green
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Failed to load BGT green: {e}")
         datasets["bgt_green"] = gpd.GeoDataFrame()
 
     # BAG oude gebouwen
@@ -113,7 +116,8 @@ def load_bgt_bag_features(polygon):
         bag = gpd.read_file(BAG_URL, layer="pand", bbox=polygon.bounds)
         oude = bag[bag["oorspronkelijk_bouwjaar"] < 1900]
         datasets["bag_oude_gebouwen"] = oude
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Failed to load BAG old buildings: {e}")
         datasets["bag_oude_gebouwen"] = gpd.GeoDataFrame()
 
     print("✅ Loaded BGT + BAG features")
@@ -148,20 +152,23 @@ def load_atlas_rivm_features(polygon):
         try:
             gdf = gpd.read_file(ATLAS_URL, layer=layer, bbox=polygon.bounds)
             datasets[key] = gdf
-        except Exception:
+        except Exception as e:
+            print(f"⚠️ Failed to load {key} ({layer}): {e}")
             datasets[key] = gpd.GeoDataFrame()
 
     # RIVM noise + air (layer names may need adjustment)
     try:
         noise = gpd.read_file(RIVM_URL, layer="geluid_weg", bbox=polygon.bounds)
         datasets["rivm_noise"] = noise
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Failed to load RIVM noise: {e}")
         datasets["rivm_noise"] = gpd.GeoDataFrame()
 
     try:
         air = gpd.read_file(RIVM_URL, layer="luchtkwaliteit", bbox=polygon.bounds)
         datasets["rivm_air"] = air
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Failed to load RIVM air: {e}")
         datasets["rivm_air"] = gpd.GeoDataFrame()
 
     print("✅ Loaded Atlas Leefomgeving + RIVM features")
@@ -190,7 +197,8 @@ def load_utrechtopen_erfgoed_features(polygon):
             bbox=polygon.bounds
         )
         datasets["utrecht_beeldbepalend_1"] = beeld1
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Failed to load Utrecht beeldbepalend_pand: {e}")
         datasets["utrecht_beeldbepalend_1"] = gpd.GeoDataFrame()
 
     try:
@@ -200,7 +208,8 @@ def load_utrechtopen_erfgoed_features(polygon):
             bbox=polygon.bounds
         )
         datasets["utrecht_beeldbepalend_2"] = beeld2
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Failed to load Utrecht beeldbepalende_panden: {e}")
         datasets["utrecht_beeldbepalend_2"] = gpd.GeoDataFrame()
 
     # Erfgoedregistratie – gemeentelijk erfgoed
@@ -211,7 +220,8 @@ def load_utrechtopen_erfgoed_features(polygon):
             bbox=polygon.bounds
         )
         datasets["erfgoed_gemeentelijk"] = erfgoed
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Failed to load Erfgoed gemeentelijk: {e}")
         datasets["erfgoed_gemeentelijk"] = gpd.GeoDataFrame()
 
     print("✅ Loaded UtrechtOpen + Erfgoed features")
@@ -232,6 +242,3 @@ def load_all_scenic_data():
     datasets.update(load_utrechtopen_erfgoed_features(polygon))
 
     return datasets
-
-
-
