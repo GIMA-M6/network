@@ -1,15 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import osmnx as ox
 import networkx as nx
-from pathlib import Path # Add this import!
+from pathlib import Path
 
 app = FastAPI()
 
 origins = [
-    "https://gima-m6.github.io", # Your live frontend
-    "http://localhost:8000",     # For local testing
-    "*"                          # Fallback to allow all during development
+    "https://gima-m6.github.io",
+    "http://localhost:8000",
+    "*",
 ]
 
 app.add_middleware(
@@ -20,59 +20,167 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. Dynamically find the folder where api.py is located
 BASE_DIR = Path(__file__).resolve().parent
 
-# 2. Build the exact path to the file
-graph_path = BASE_DIR / "utrecht_network.graphml"
+# ---------------------------------------------------------------------------
+# GRAPH LOADING
+# Loads the scenic-enriched graph if available, falls back to plain graph.
+# ---------------------------------------------------------------------------
 
-# 3. Check if it actually exists before loading to give a better error message
-if not graph_path.exists():
-    raise FileNotFoundError(f"Cannot find the map file! I looked exactly here: {graph_path}")
+SCENIC_GRAPH_PATH = BASE_DIR / "utrecht_network_scenic.graphml"
+PLAIN_GRAPH_PATH  = BASE_DIR / "utrecht_network.graphml"
 
-print(f"Loading map from: {graph_path}")
-G = ox.load_graphml(graph_path)
-print("Map loaded!")
+if SCENIC_GRAPH_PATH.exists():
+    print(f"Loading scenic graph from: {SCENIC_GRAPH_PATH}")
+    G = ox.load_graphml(SCENIC_GRAPH_PATH)
+    HAS_SCENIC = True
+    print("Scenic graph loaded!")
+elif PLAIN_GRAPH_PATH.exists():
+    print(f"Scenic graph not found — falling back to plain graph: {PLAIN_GRAPH_PATH}")
+    G = ox.load_graphml(PLAIN_GRAPH_PATH)
+    HAS_SCENIC = False
+    print("Plain graph loaded.")
+else:
+    raise FileNotFoundError(
+        f"No graph file found. Expected one of:\n"
+        f"  {SCENIC_GRAPH_PATH}\n"
+        f"  {PLAIN_GRAPH_PATH}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# HELPERS
+# ---------------------------------------------------------------------------
+
+def _extract_route_coords(G: nx.MultiDiGraph, route_nodes: list) -> list[list[float]]:
+    """
+    Walk a list of node IDs and extract the full polyline geometry,
+    using stored edge geometry where available.
+    """
+    coords = []
+    for i in range(len(route_nodes) - 1):
+        u = route_nodes[i]
+        v = route_nodes[i + 1]
+        edge_data = G.get_edge_data(u, v)[0]
+
+        if "geometry" in edge_data:
+            xs, ys = edge_data["geometry"].xy
+            for x, y in zip(xs, ys):
+                coords.append([y, x])          # Leaflet wants [lat, lon]
+        else:
+            coords.append([G.nodes[u]["y"], G.nodes[u]["x"]])
+
+    last = route_nodes[-1]
+    coords.append([G.nodes[last]["y"], G.nodes[last]["x"]])
+    return coords
+
+
+def _route_stats(G: nx.MultiDiGraph, route_nodes: list) -> dict:
+    """Compute total distance and mean scenic score for a route."""
+    total_length = 0.0
+    scenic_scores = []
+
+    for i in range(len(route_nodes) - 1):
+        u = route_nodes[i]
+        v = route_nodes[i + 1]
+        edge_data = G.get_edge_data(u, v)[0]
+        total_length += edge_data.get("length", 0.0)
+        if "scenic_score" in edge_data:
+            scenic_scores.append(edge_data["scenic_score"])
+
+    return {
+        "distance_m": round(total_length),
+        "mean_scenic_score": round(sum(scenic_scores) / len(scenic_scores), 3)
+        if scenic_scores else None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# ENDPOINTS
+# ---------------------------------------------------------------------------
 
 @app.get("/get-route")
-def calculate_route(start_lat: float, start_lon: float, end_lat: float, end_lon: float):
-    
+def get_shortest_route(
+    start_lat: float, start_lon: float,
+    end_lat: float,   end_lon: float,
+):
+    """Classic shortest-path route (unchanged behaviour)."""
     try:
-        # 1. Vind de start en eind nodes
         start_node = ox.nearest_nodes(G, start_lon, start_lat)
-        end_node = ox.nearest_nodes(G, end_lon, end_lat)
-        
-        # 2. Bereken de kortste route (dit is een lijst van Node ID's)
-        route_nodes = nx.shortest_path(G, start_node, end_node, weight='length')
-        
-        # 3. NIEUW: Verzamel de exacte vorm (geometry) van de wegen
-        route_coords = []
-        
-        for i in range(len(route_nodes) - 1):
-            u = route_nodes[i]
-            v = route_nodes[i+1]
-            
-            # Haal de data van de straat op tussen node U en V
-            # (OSMnx netwerken zijn MultiDiGraphs, dus we pakken de eerste verbinding [0])
-            edge_data = G.get_edge_data(u, v)[0]
-            
-            # Check of deze straat een fysieke bocht/vorm heeft ingeladen
-            if 'geometry' in edge_data:
-                # Haal alle micro-coördinaten van de bocht uit elkaar
-                xs, ys = edge_data['geometry'].xy
-                for x, y in zip(xs, ys):
-                    route_coords.append([y, x]) # Let op: Leaflet wil Lat(y), Lon(x)
-            else:
-                # Als het een perfect rechte weg is, heeft hij geen geometry.
-                # Dan pakken we gewoon het startpunt.
-                route_coords.append([G.nodes[u]['y'], G.nodes[u]['x']])
-                
-        # Vergeet niet het allereerste eindpunt van de hele route toe te voegen
-        last_node = route_nodes[-1]
-        route_coords.append([G.nodes[last_node]['y'], G.nodes[last_node]['x']])
+        end_node   = ox.nearest_nodes(G, end_lon,   end_lat)
+        route      = nx.shortest_path(G, start_node, end_node, weight="length")
+        coords     = _extract_route_coords(G, route)
+        stats      = _route_stats(G, route)
 
-        # 4. Stuur de gedetailleerde lijst terug naar je website
-        return {"status": "success", "route": route_coords}
-        
+        return {"status": "success", "route": coords, **stats}
+
+    except nx.NetworkXNoPath:
+        return {"status": "error", "message": "No path found between these points."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+@app.get("/get-scenic-route")
+def get_scenic_route(
+    start_lat: float, start_lon: float,
+    end_lat: float,   end_lon: float,
+    alpha: float = Query(default=0.5, ge=0.0, le=1.0,
+                         description="0 = shortest path, 1 = most scenic"),
+):
+    """
+    Scenic route using the pre-computed scenic_cost edge weights.
+
+    The alpha parameter lets the frontend offer a slider:
+        0.0 → pure shortest path
+        0.5 → balanced (default)
+        1.0 → maximise scenicness
+
+    Because scenic_cost was baked with a fixed alpha at graph-build time,
+    this endpoint recomputes the effective cost on the fly for any alpha value:
+        cost = length * (1 / (alpha * scenic_score + (1 - alpha)))
+    This is fast (no geo ops) — just arithmetic on stored edge attributes.
+    """
+    if not HAS_SCENIC:
+        return {
+            "status": "error",
+            "message": (
+                "Scenic graph not available. "
+                "Run scenic_graph.py to generate utrecht_network_scenic.graphml."
+            ),
+        }
+
+    try:
+        start_node = ox.nearest_nodes(G, start_lon, start_lat)
+        end_node   = ox.nearest_nodes(G, end_lon,   end_lat)
+
+        # Set edge weights dynamically for the requested alpha
+        for u, v, key, data in G.edges(keys=True, data=True):
+            length = data.get("length", 1.0)
+            score  = float(data.get("scenic_score", 0.0))
+            data["_scenic_cost"] = length * (1.0 / (alpha * score + (1.0 - alpha)))
+
+        route  = nx.shortest_path(G, start_node, end_node, weight="_scenic_cost")
+        coords = _extract_route_coords(G, route)
+        stats  = _route_stats(G, route)
+
+        return {
+            "status": "success",
+            "route":  coords,
+            "alpha":  alpha,
+            **stats,
+        }
+
+    except nx.NetworkXNoPath:
+        return {"status": "error", "message": "No path found between these points."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/health")
+def health():
+    return {
+        "status":      "ok",
+        "scenic_graph": HAS_SCENIC,
+        "nodes":        G.number_of_nodes(),
+        "edges":        G.number_of_edges(),
+    }
