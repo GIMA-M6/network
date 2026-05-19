@@ -5,7 +5,18 @@ Weights are derived from empirical scenicness coefficients (see [Data & Methods]
 
 ---
 
-## Project Structure
+#### PROJECT STRUCTURE  #####
+
+.github/workflows     #Linking structure to sync Github repository with HuggingFace Server repository
+hf_deploy             #Contains all files relevant for route planner uploaded to HuggingFace Server
+network_base          #Contains all basic OSM network files (code and results)
+scenic                #Contains all files relevant to scenic network
+- extra               #Contains leftovers of scenic code
+
+
+
+
+
 
 ```
 .
