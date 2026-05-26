@@ -55,23 +55,34 @@ else:
 def _extract_route_coords(G: nx.MultiDiGraph, route_nodes: list) -> list[list[float]]:
     """
     Walk a list of node IDs and extract the full polyline geometry,
-    using stored edge geometry where available.
+    ensuring the geometry flows in the correct direction of travel.
     """
     coords = []
+    
     for i in range(len(route_nodes) - 1):
         u = route_nodes[i]
         v = route_nodes[i + 1]
-        edge_data = G.get_edge_data(u, v)[0]
+        
+        edges = G.get_edge_data(u, v)
+        edge_data = min(edges.values(), key=lambda x: x.get('length', float('inf')))
 
         if "geometry" in edge_data:
-            xs, ys = edge_data["geometry"].xy
-            for x, y in zip(xs, ys):
-                coords.append([y, x])          # Leaflet wants [lat, lon]
+            geom_coords = list(edge_data["geometry"].coords)
+            
+            u_x, u_y = G.nodes[u]["x"], G.nodes[u]["y"]
+            start_x, start_y = geom_coords[0]
+            
+            if abs(start_x - u_x) > 1e-5 or abs(start_y - u_y) > 1e-5:
+                geom_coords.reverse() # Draai de straat om!
+            
+            for x, y in geom_coords[:-1]:
+                coords.append([y, x])  # Leaflet wants [lat, lon]
         else:
             coords.append([G.nodes[u]["y"], G.nodes[u]["x"]])
 
-    last = route_nodes[-1]
-    coords.append([G.nodes[last]["y"], G.nodes[last]["x"]])
+    last_node = route_nodes[-1]
+    coords.append([G.nodes[last_node]["y"], G.nodes[last_node]["x"]])
+    
     return coords
 
 
