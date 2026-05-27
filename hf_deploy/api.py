@@ -24,7 +24,6 @@ BASE_DIR = Path(__file__).resolve().parent
 
 # ---------------------------------------------------------------------------
 # GRAPH LOADING
-# Loads the scenic-enriched graph if available, falls back to plain graph.
 # ---------------------------------------------------------------------------
 
 SCENIC_GRAPH_PATH = BASE_DIR / "utrecht_network_scenic.graphml"
@@ -150,16 +149,19 @@ def get_scenic_route(
         end_node   = ox.nearest_nodes(G, end_lon,   end_lat)
 
         def dynamic_scenic_cost(u, v, edge_data):
-            length = edge_data.get("length", 1.0)
+            length = float(edge_data.get("length", 1.0))
             score  = float(edge_data.get("scenic_score", 0.0))
             
-            denominator = (alpha * score + (1.0 - alpha))
-            if denominator <= 0:
-                denominator = 0.0001
-                
-            return length * (1.0 / denominator)
+            if alpha == 0:
+                return length
+            
+            AMPLIFIER = 100.0 
+            
+            # Bonus calculation
+            scenic_bonus = 1.0 + (alpha * score * AMPLIFIER)
+            
+            return length / scenic_bonus
 
-        # Geef de functie direct door aan weight (zonder haakjes!)
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
         
         coords = _extract_route_coords(G, route)
