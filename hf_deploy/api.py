@@ -94,17 +94,18 @@ def _route_stats(G: nx.MultiDiGraph, route_nodes: list) -> dict:
     for i in range(len(route_nodes) - 1):
         u = route_nodes[i]
         v = route_nodes[i + 1]
-        edge_data = G.get_edge_data(u, v)[0]
+        
+        edges = G.get_edge_data(u, v)
+        edge_data = min(edges.values(), key=lambda x: x.get('length', float('inf')))
+        
         total_length += edge_data.get("length", 0.0)
         if "scenic_score" in edge_data:
-            scenic_scores.append(edge_data["scenic_score"])
+            scenic_scores.append(float(edge_data["scenic_score"]))
 
     return {
         "distance_m": round(total_length),
-        "mean_scenic_score": round(sum(scenic_scores) / len(scenic_scores), 3)
-        if scenic_scores else None,
+        "mean_scenic_score": round(sum(scenic_scores) / len(scenic_scores), 3) if scenic_scores else None,
     }
-
 
 # ---------------------------------------------------------------------------
 # ENDPOINTS
@@ -138,39 +139,29 @@ def get_scenic_route(
     alpha: float = Query(default=0.5, ge=0.0, le=1.0,
                          description="0 = shortest path, 1 = most scenic"),
 ):
-    """
-    Scenic route using the pre-computed scenic_cost edge weights.
-
-    The alpha parameter lets the frontend offer a slider:
-        0.0 → pure shortest path
-        0.5 → balanced (default)
-        1.0 → maximise scenicness
-
-    Because scenic_cost was baked with a fixed alpha at graph-build time,
-    this endpoint recomputes the effective cost on the fly for any alpha value:
-        cost = length * (1 / (alpha * scenic_score + (1 - alpha)))
-    This is fast (no geo ops) — just arithmetic on stored edge attributes.
-    """
     if not HAS_SCENIC:
         return {
             "status": "error",
-            "message": (
-                "Scenic graph not available. "
-                "Run scenic_graph.py to generate utrecht_network_scenic.graphml."
-            ),
+            "message": "Scenic graph not available."
         }
 
     try:
         start_node = ox.nearest_nodes(G, start_lon, start_lat)
         end_node   = ox.nearest_nodes(G, end_lon,   end_lat)
 
-        # Set edge weights dynamically for the requested alpha
-        for u, v, key, data in G.edges(keys=True, data=True):
-            length = data.get("length", 1.0)
-            score  = float(data.get("scenic_score", 0.0))
-            data["_scenic_cost"] = length * (1.0 / (alpha * score + (1.0 - alpha)))
+        def dynamic_scenic_cost(u, v, edge_data):
+            length = edge_data.get("length", 1.0)
+            score  = float(edge_data.get("scenic_score", 0.0))
+            
+            denominator = (alpha * score + (1.0 - alpha))
+            if denominator <= 0:
+                denominator = 0.0001
+                
+            return length * (1.0 / denominator)
 
-        route  = nx.shortest_path(G, start_node, end_node, weight="_scenic_cost")
+        # Geef de functie direct door aan weight (zonder haakjes!)
+        route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
+        
         coords = _extract_route_coords(G, route)
         stats  = _route_stats(G, route)
 
