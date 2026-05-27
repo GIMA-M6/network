@@ -150,17 +150,22 @@ def get_scenic_route(
 
         def dynamic_scenic_cost(u, v, edge_data):
             length = float(edge_data.get("length", 1.0))
-            score  = float(edge_data.get("scenic_score", 0.0))
+            raw_score = float(edge_data.get("scenic_score", 0.0))
             
             if alpha == 0:
                 return length
+                
+            import math
+            stretched_score = math.sqrt(raw_score)
             
-            AMPLIFIER = 100.0 
+            MIN_MULTIPLIER = 0.1
             
-            # Bonus calculation
-            scenic_bonus = 1.0 + (alpha * score * AMPLIFIER)
+            multiplier = 1.0 - (alpha * stretched_score * (1.0 - MIN_MULTIPLIER))
             
-            return length / scenic_bonus
+            multiplier = max(MIN_MULTIPLIER, multiplier)
+            
+            cost = length * multiplier
+            return cost
 
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
         

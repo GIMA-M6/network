@@ -41,7 +41,7 @@ RAW_COEFFICIENTS = {
     "Water":                   -0.35,
     "Watercourse":              0.40,
     # Built Environment
-    "Asphalt":                 -0.20,
+    "Asphalt":                 -0.0020,
     "Building":                -0.15,
     "Church":                   0.20,
     "City":                    -0.10,
@@ -56,7 +56,7 @@ RAW_COEFFICIENTS = {
     "Monument":                 0.05,
     "Overhead Power Line":     -0.30,
     "Real Estate":             -0.20,
-    "Road Surface":            -0.20,
+    "Road Surface":            -0.0020,
     "Street Light":            -0.25,
     "Tar":                     -0.25,
     "Tower Block":             -0.30,
