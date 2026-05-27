@@ -32,20 +32,31 @@ def load_study_area():
         tags = {"boundary": "administrative", "admin_level": "8", "name": "Utrecht"}
         gdf = ox.features_from_place(config.STUDY_AREA_NAME, tags)
 
-        if len(gdf) > 0:
+        if gdf is not None and len(gdf) > 0:
             geometry = gdf.geometry.iloc[0]
             if geometry.geom_type == "MultiPolygon":
                 polygon = max(geometry.geoms, key=lambda x: x.area)
             else:
                 polygon = geometry
-            print(f"Loaded study area boundary from OSM: {config.STUDY_AREA_NAME}")
-            return polygon
+            
+            # Extra controle of het daadwerkelijk een Polygon/MultiPolygon is
+            if polygon.geom_type in ["Polygon", "MultiPolygon"]:
+                print(f"Loaded study area boundary from OSM: {config.STUDY_AREA_NAME}")
+                return polygon
     except Exception as e:
-        print(f"OSM boundary query failed, using fallback bbox: {e}")
+        print(f"OSM boundary query failed: {e}")
 
-    polygon = box(*config.STUDY_AREA_BBOX)
+    # FALLBACK: Maak expliciet een Shapely Polygon van de BBOX coördinaten
     print(f"Using fallback bbox: {config.STUDY_AREA_BBOX}")
-    return polygon
+    
+    # config.STUDY_AREA_BBOX moet zijn: (minx, miny, maxx, maxy)
+    fallback_polygon = box(
+        config.STUDY_AREA_BBOX[0], 
+        config.STUDY_AREA_BBOX[1], 
+        config.STUDY_AREA_BBOX[2], 
+        config.STUDY_AREA_BBOX[3]
+    )
+    return fallback_polygon
 
 
 # ---------------------------------------------------------------------------

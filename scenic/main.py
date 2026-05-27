@@ -21,7 +21,7 @@ import geopandas as gpd
 
 from data_loader import load_all_scenic_data
 from scenic_weights import assign_weights, print_weight_table
-import config
+import scenic.config as config
 
 
 # ---------------------------------------------------------------------------
