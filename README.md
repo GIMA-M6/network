@@ -1,7 +1,5 @@
 # Utrecht Scenic Routing
 
-Load, weight, and export scenic geographic datasets for Utrecht (Netherlands).  
-Weights are derived from empirical scenicness coefficients (see [Data & Methods](#data--methods)).
 
 ---
 
@@ -21,6 +19,8 @@ Weights are derived from empirical scenicness coefficients (see [Data & Methods]
 ---
 
 
+Load, weight, and export scenic geographic datasets for Utrecht (Netherlands).  
+Weights are derived from empirical scenicness coefficients (see [Data & Methods](#data--methods)).
 
 
 
@@ -138,3 +138,44 @@ Edit `config.py` to change:
 - WFS endpoints are queried live — results depend on external service availability.
 - The `Reservoir` label has a large negative coefficient (−0.55) in the source data; `bgt_water` is mapped to `Watercourse + Water` (moderately negative) rather than `Reservoir` to better reflect Utrecht's canal network.
 - Weights are static per layer — they do not vary by feature attributes within a layer.
+
+- How to Upload a New GraphML File to the Project
+This guide explains how to replace the routing graph file (utrecht_network.graphml) so it automatically deploys to the route planner.
+
+One-Time Setup (do this once on your PC)
+1. Install Git LFS
+Git LFS is required to handle the large .graphml file.
+
+Download and install from: https://git-lfs.github.com
+After installing, open a terminal (or VS Code terminal) and run:
+
+  git lfs install
+2. Clone the repository (if you haven't already)
+In VS Code, go to File → Clone Repository and paste the GitHub repo URL.
+Or in the terminal:
+git clone <your-repo-url>
+
+Uploading a New GraphML File
+Step 1 — Replace the file
+Navigate to the hf_deploy/ folder in the project and replace utrecht_network.graphml with your new version. Keep the filename exactly the same:
+utrecht_network.graphml
+Step 2 — Open the terminal in VS Code
+Go to Terminal → New Terminal in the top menu.
+Step 3 — Stage the file
+git add hf_deploy/utrecht_network.graphml
+Step 4 — Commit the change
+git commit -m "Update routing graph"
+Step 5 — Push to GitHub
+git push
+That's it! GitHub Actions will automatically deploy the new file to the route planner on Hugging Face within a minute or two.
+
+How to Check if the Deploy Worked
+
+Go to the GitHub repository in your browser
+Click the Actions tab at the top
+You should see a workflow run in progress or completed with a ✅ green checkmark
+
+If you see a ❌ red cross, let Oleg know.
+
+Common Mistakes
+ProblemFixForgot to install Git LFSRun git lfs install first, then try againNamed the file differentlyRename it back to utrecht_network.graphml exactlyPush was rejectedMake sure you have write access to the repositoryNothing happened after pushCheck the file is inside the hf_deploy/ folder
