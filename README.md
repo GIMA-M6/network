@@ -18,6 +18,7 @@
 
 ---
 
+Check API server status on: https://huggingface.co/spaces/OlegBergs/route_backend_api/tree/main
 
 Load, weight, and export scenic geographic datasets for Utrecht (Netherlands).  
 Weights are derived from empirical scenicness coefficients (see [Data & Methods](#data--methods)).
