@@ -154,17 +154,11 @@ def get_scenic_route(
             
             if alpha == 0:
                 return length
-                
-            import math
-            stretched_score = math.sqrt(raw_score)
             
-            MIN_MULTIPLIER = 0.1
-            
-            multiplier = 1.0 - (alpha * stretched_score * (1.0 - MIN_MULTIPLIER))
-            
-            multiplier = max(MIN_MULTIPLIER, multiplier)
-            
-            cost = length * multiplier
+            # Correct formula from scenic_graph.py:
+            # cost = length / (alpha * scenic_score + (1 - alpha))
+            # This creates meaningful route differentiation based on alpha
+            cost = length / (alpha * raw_score + (1.0 - alpha))
             return cost
 
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
