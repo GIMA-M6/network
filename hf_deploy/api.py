@@ -155,10 +155,13 @@ def get_scenic_route(
             if alpha == 0:
                 return length
             
-            # Correct formula from scenic_graph.py:
-            # cost = length / (alpha * scenic_score + (1 - alpha))
-            # This creates meaningful route differentiation based on alpha
-            cost = length / (alpha * raw_score + (1.0 - alpha))
+            # Smooth blending formula: creates a gradient of routes from shortest to most scenic
+            # cost = length / (1 - alpha + alpha * scenic_score)
+            # 
+            # alpha = 0.0  → cost = length                     (shortest path, ignores scenery)
+            # alpha = 0.5  → cost = length / (0.5 + 0.5*score) (balanced)
+            # alpha = 1.0  → cost = length / score             (pure scenic, avoids non-scenic edges)
+            cost = length / (1.0 - alpha + alpha * raw_score)
             return cost
 
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
