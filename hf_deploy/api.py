@@ -161,19 +161,23 @@ def get_scenic_route(
         end_node   = ox.nearest_nodes(G, end_lon,   end_lat)
 
         def dynamic_scenic_cost(u, v, edge_data):
+            """
+            Match the exact formula from scenic_graph.py line 288:
+            cost = length / (alpha * scenic_score + (1 - alpha))
+            
+            This ensures consistency with pre-computed scenic_score values.
+            """
             length = float(edge_data.get("length", 1.0))
             raw_score = float(edge_data.get("scenic_score", 0.0))
             
             if alpha == 0:
                 return length
             
-            # Smooth blending formula: creates a gradient of routes from shortest to most scenic
-            # cost = length / (1 - alpha + alpha * scenic_score)
-            # 
-            # alpha = 0.0  → cost = length                     (shortest path, ignores scenery)
-            # alpha = 0.5  → cost = length / (0.5 + 0.5*score) (balanced)
-            # alpha = 1.0  → cost = length / score             (pure scenic, avoids non-scenic edges)
-            cost = length / (1.0 - alpha + alpha * raw_score)
+            # Exact formula from scenic_graph.py
+            # alpha = 0.0  → cost = length / 1.0 = length
+            # alpha = 0.5  → cost = length / (0.5 + 0.5*score)
+            # alpha = 1.0  → cost = length / score
+            cost = length / (alpha * raw_score + (1.0 - alpha))
             return cost
 
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
