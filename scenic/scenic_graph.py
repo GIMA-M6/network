@@ -81,7 +81,7 @@ DEFAULT_SEARCH_RADIUS = 50.0
 
 # Decay steepness: score = exp(-k * distance / radius)
 # k=2 means a feature at the edge of its radius contributes ~e^-2 ≈ 0.13× its weight
-DECAY_K = 0.5
+DECAY_K = 2.5
 
 
 # ---------------------------------------------------------------------------
