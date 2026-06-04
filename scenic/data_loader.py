@@ -4,7 +4,7 @@ data_loader.py — Load ALL scenic-relevant datasets for Utrecht.
 Groups:
 - OSM (artwork, memorials, viewpoints, fountains, ruins, benches, museums, boulevards, leisure)
 - BGT + BAG (benches, water, green, old buildings)
-- Atlas Leefomgeving + RIVM (monuments, castles, mills, etc. + noise/air)
+- Atlas Leefomgeving (monuments, castles, mills, etc.)
 - UtrechtOpen + Erfgoedregistratie (beeldbepalende panden, gemeentelijk erfgoed)
 
 Output:
@@ -151,13 +151,12 @@ def load_bgt_bag_features(polygon):
 
 
 # ---------------------------------------------------------------------------
-# 3. ATLAS LEEFOMGEVING + RIVM
+# 3. ATLAS LEEFOMGEVING
 # ---------------------------------------------------------------------------
 
-def load_atlas_rivm_features(polygon):
+def load_atlas_features(polygon):
     """
     Atlas Leefomgeving: monuments, castles, mills, etc.
-    RIVM: road noise and air quality.
     """
     datasets = {}
     bounds = polygon.bounds
@@ -170,25 +169,7 @@ def load_atlas_rivm_features(polygon):
             print(f"Failed to load {key} ({layer}): {e}")
             datasets[key] = gpd.GeoDataFrame()
 
-    # RIVM noise
-    try:
-        datasets["rivm_noise"] = gpd.read_file(
-            config.RIVM_URL, layer="geluid_weg", bbox=bounds
-        )
-    except Exception as e:
-        print(f"Failed to load RIVM noise: {e}")
-        datasets["rivm_noise"] = gpd.GeoDataFrame()
-
-    # RIVM air quality
-    try:
-        datasets["rivm_air"] = gpd.read_file(
-            config.RIVM_URL, layer="luchtkwaliteit", bbox=bounds
-        )
-    except Exception as e:
-        print(f"Failed to load RIVM air quality: {e}")
-        datasets["rivm_air"] = gpd.GeoDataFrame()
-
-    print("Loaded Atlas Leefomgeving + RIVM features")
+    print("Loaded Atlas Leefomgeving features")
     return datasets
 
 
@@ -240,7 +221,7 @@ def load_all_scenic_data() -> dict:
     datasets = {}
     datasets.update(load_osm_features(polygon))
     datasets.update(load_bgt_bag_features(polygon))
-    datasets.update(load_atlas_rivm_features(polygon))
+    datasets.update(load_atlas_features(polygon))
     datasets.update(load_utrechtopen_erfgoed_features(polygon))
 
     return datasets
