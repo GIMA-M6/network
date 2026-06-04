@@ -48,42 +48,33 @@ DEFAULT_ALPHA = 0.5
 # Per-layer search radius (meters).
 # Reflects realistic street-level visibility in Utrecht's urban environment.
 LAYER_SEARCH_RADIUS: dict[str, float] = {
-    # Large landmarks — visible from further away
-    "atlas_rijksmonumenten":        100.0,
+    # Large landmarks
     "atlas_kastelen":               100.0,
+    "atlas_rijksmonumenten":        100.0,
     "atlas_molens":                 100.0,
     "atlas_groene_rijksmonumenten": 100.0,
     "atlas_stadsgezichten":         100.0,
     "atlas_grafheuvels":             75.0,
-
     # Heritage buildings — block-level visibility
-    "bag_oude_gebouwen":             50.0,
     "utrecht_beeldbepalend_1":       50.0,
     "utrecht_beeldbepalend_2":       50.0,
+    "bag_oude_gebouwen":             50.0,
     "erfgoed_gemeentelijk":          50.0,
-
-    # OSM cultural features
-    "osm_artwork":                   30.0,
-    "osm_memorial":                  30.0,
+    "osm_ruins":                     50.0,
     "osm_museum":                    50.0,
     "osm_theatre":                   50.0,
-    "osm_ruins":                     50.0,
     "osm_viewpoint":                 75.0,
-
-    # Water & green — ambient quality, medium range
+    # Water & green
     "bgt_water":                     50.0,
-    "osm_fountain":                  25.0,
     "bgt_green":                     50.0,
     "osm_leisure":                   50.0,
-
-    # Street furniture — only matters when you're right there
+    "osm_fountain":                  25.0,
+    # Street furniture
+    "osm_artwork":                   30.0,
+    "osm_memorial":                  30.0,
     "osm_benches":                   20.0,
     "bgt_benches":                   20.0,
-    "osm_boulevard":                 30.0,
-
-    # Negative layers — noise and pollution felt at larger range
-    "rivm_noise":                    75.0,
-    "rivm_air":                      75.0,
+    "osm_boulevard":                 20.0,
 }
 
 # Fallback radius for any layer not listed above
