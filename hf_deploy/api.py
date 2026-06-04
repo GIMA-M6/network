@@ -86,9 +86,10 @@ def _extract_route_coords(G: nx.MultiDiGraph, route_nodes: list) -> list[list[fl
 
 
 def _route_stats(G: nx.MultiDiGraph, route_nodes: list) -> dict:
-    """Compute total distance and mean scenic score for a route."""
+    """Compute total distance and weighted mean scenic score for a route."""
     total_length = 0.0
     scenic_scores = []
+    edge_lengths = []
 
     for i in range(len(route_nodes) - 1):
         u = route_nodes[i]
@@ -97,13 +98,24 @@ def _route_stats(G: nx.MultiDiGraph, route_nodes: list) -> dict:
         edges = G.get_edge_data(u, v)
         edge_data = min(edges.values(), key=lambda x: x.get('length', float('inf')))
         
-        total_length += edge_data.get("length", 0.0)
+        length = edge_data.get("length", 0.0)
+        total_length += length
+        edge_lengths.append(length)
+        
         if "scenic_score" in edge_data:
             scenic_scores.append(float(edge_data["scenic_score"]))
+        else:
+            scenic_scores.append(0.0)
+
+    # Weighted mean: weight each score by the edge's distance proportion
+    mean_scenic_score = None
+    if scenic_scores and total_length > 0:
+        weighted_score = sum(s * l for s, l in zip(scenic_scores, edge_lengths)) / total_length
+        mean_scenic_score = round(weighted_score, 3)
 
     return {
         "distance_m": round(total_length),
-        "mean_scenic_score": round(sum(scenic_scores) / len(scenic_scores), 3) if scenic_scores else None,
+        "mean_scenic_score": mean_scenic_score,
     }
 
 # ---------------------------------------------------------------------------
