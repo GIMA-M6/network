@@ -20,19 +20,19 @@ STUDY_AREA_BBOX = (5.05, 52.05, 5.20, 52.15)
 # ---------------------------------------------------------------------------
 
 # BGT (Basisregistratie Grootschalige Topografie) — Kadaster WFS
-BGT_URL = "https://pdok.nl"
+BGT_URL = "https://bgt.basisregistraties.overheid.nl/bgtws/wfs"
 
 # BAG (Basisregistraties Adressen en Gebouwen) — Kadaster WFS
 BAG_URL = "https://service.pdok.nl/lv/bag/wfs/v2_0"
 
 # RCE (Rijksdienst voor het Cultureel Erfgoed)(was eerst: "Atlas Leefomgeving") — GeoServer WFS)
-ATLAS_URL = "https://geovoorziening.nl"
+ATLAS_URL = "https://geoserver.cultureelerfgoed.nl/geoserver/wfs"
 
 # RIVM — GeoServer WFS
 RIVM_URL = "https://data.rivm.nl/geo/wfs"
 
 # UtrechtOpen — GeoServer WFS
-UTRECHTOPEN_URL = "https://utrecht.nl"
+UTRECHTOPEN_URL = "https://geoservices.cbs.nl/geoserver/wfs"
 
 # Erfgoedregistratie — GeoServer WFS
 ERFGOED_URL = "https://erfgoedregistratie.nl/geoserver/wfs"
