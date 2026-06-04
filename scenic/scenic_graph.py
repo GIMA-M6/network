@@ -322,7 +322,7 @@ def enrich_graph(
     from scenic_weights import SCENIC_WEIGHT_LOOKUP
 
     # 1. Load graph
-    G = load_graph(input_path)
+    G = load_graph(r"C:\GIMA\Module 6\Code\network\hf_deploy\utrecht_network.graphml")
 
     # 2. Load scenic data if not provided
     if datasets is None:
@@ -348,7 +348,7 @@ def enrich_graph(
     G = attach_scores_to_graph(G, edges_gdf, scenic_scores, alpha)
 
     # 6. Save
-    save_graph(G, output_path)
+    save_graph(G, r"C:\GIMA\Module 6\Code\network\hf_deploy\utrecht_network_scenic.graphml")
 
     return G
 
