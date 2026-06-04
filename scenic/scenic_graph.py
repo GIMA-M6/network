@@ -32,8 +32,7 @@ import geopandas as gpd
 import networkx as nx
 import numpy as np
 import osmnx as ox
-from shapely.geometry import Point, LineString
-from shapely.ops import unary_union
+from shapely.geometry import LineString
 
 # ---------------------------------------------------------------------------
 # CONFIGURATION
@@ -367,34 +366,32 @@ if __name__ == "__main__":
 
     enrich_graph(args.input, args.output, alpha=args.alpha)
 
+    # ===========================================================================
+    # GEOPACKAGE EXPORT
+    # ===========================================================================
+    try:
+        print("\nNetwerk exporteren naar GeoPackage...")
+        
+        G_saved = ox.load_graphml(args.output)
+        
+        gdf_nodes, gdf_edges = ox.graph_to_gdfs(G_saved, nodes=True, edges=True)
 
-# ===========================================================================
-# ADDITIONAL CODE FOR GEOPACKAGE EXPORT
-# ===========================================================================
-try:
-    print("\nNetwerk exporteren naar GeoPackage...")
-    
-    G_saved = ox.load_graphml(args.output)
-    
-    gdf_nodes, gdf_edges = ox.graph_to_gdfs(G_saved, nodes=True, edges=True)
+        for col in gdf_nodes.columns:
+            if gdf_nodes[col].apply(lambda x: isinstance(x, list)).any():
+                gdf_nodes[col] = gdf_nodes[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x)
 
-    for col in gdf_nodes.columns:
-        if gdf_nodes[col].apply(lambda x: isinstance(x, list)).any():
-            gdf_nodes[col] = gdf_nodes[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x)
+        for col in gdf_edges.columns:
+            if gdf_edges[col].apply(lambda x: isinstance(x, list)).any():
+                gdf_edges[col] = gdf_edges[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x)
 
-    for col in gdf_edges.columns:
-        if gdf_edges[col].apply(lambda x: isinstance(x, list)).any():
-            gdf_edges[col] = gdf_edges[col].apply(lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x)
+        gdf_edges = gdf_edges.reset_index()
 
-    gdf_edges = gdf_edges.reset_index()
+        output_gpkg_path = args.output.replace(".graphml", ".gpkg")
+        
+        gdf_nodes.to_file(output_gpkg_path, layer="network_nodes", driver="GPKG")
+        gdf_edges.to_file(output_gpkg_path, layer="network_edges", driver="GPKG")
 
-    output_gpkg_path = args.output.replace(".graphml", ".gpkg")
-    
-    gdf_nodes.to_file(output_gpkg_path, layer="network_nodes", driver="GPKG")
-    gdf_edges.to_file(output_gpkg_path, layer="network_edges", driver="GPKG")
+        print(f"Succesvol opgeslagen! Nodes en Edges staan in: {output_gpkg_path}\n")
 
-    print(f"Succesvol opgeslagen! Nodes en Edges staan in: {output_gpkg_path}\n")
-
-except Exception as e:
-    print(f"\n[WARN] GeoPackage-export mislukt, maar GraphML is veilig opgeslagen: {e}\n")
-
+    except Exception as e:
+        print(f"\n[WARN] GeoPackage-export mislukt, maar GraphML is veilig opgeslagen: {e}\n")
