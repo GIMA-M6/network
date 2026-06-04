@@ -1,5 +1,5 @@
 """
-Assign scenicness weights to all scenic datasets loaded by the data loader.
+scenic_weights.py — Assign scenicness weights to all scenic datasets loaded by the data loader.
 
 Weights are derived from the forest-plot coefficients in:
     Seresinhe et al. (or equivalent) — 'Change in Scenicness Rating' per scene label.
@@ -211,6 +211,9 @@ def assign_weights(datasets: dict) -> tuple[dict, dict]:
             gdf["scenic_weight"] = weight
             # Also attach the raw (un-normalised) score for reference
             gdf["scenic_weight_raw"] = round(_RAW_SCORES.get(layer_name, 0.0), 4)
+            print(f"  [OK] {layer_name}: {len(gdf)} features, weight={weight:.4f}")
+        else:
+            print(f"  [SKIP] {layer_name}: empty or not a GeoDataFrame")
 
         weighted_datasets[layer_name] = gdf
 
