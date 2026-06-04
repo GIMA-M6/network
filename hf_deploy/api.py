@@ -160,12 +160,18 @@ def get_scenic_route(
         start_node = ox.nearest_nodes(G, start_lon, start_lat)
         end_node   = ox.nearest_nodes(G, end_lon,   end_lat)
 
+        # DEBUG: Sample some edge scenic scores
+        sample_scores = []
+        for u, v, key, data in list(G.edges(keys=True, data=True))[:10]:
+            score = data.get("scenic_score", 0.0)
+            sample_scores.append(score)
+        print(f"[DEBUG] Sample scenic_scores from graph: {sample_scores}")
+        print(f"[DEBUG] Alpha: {alpha}")
+
         def dynamic_scenic_cost(u, v, edge_data):
             """
             Match the exact formula from scenic_graph.py line 288:
             cost = length / (alpha * scenic_score + (1 - alpha))
-            
-            This ensures consistency with pre-computed scenic_score values.
             """
             length = float(edge_data.get("length", 1.0))
             raw_score = float(edge_data.get("scenic_score", 0.0))
@@ -173,15 +179,13 @@ def get_scenic_route(
             if alpha == 0:
                 return length
             
-            # Exact formula from scenic_graph.py
-            # alpha = 0.0  → cost = length / 1.0 = length
-            # alpha = 0.5  → cost = length / (0.5 + 0.5*score)
-            # alpha = 1.0  → cost = length / score
             cost = length / (alpha * raw_score + (1.0 - alpha))
             return cost
 
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
         
+        print(f"[DEBUG] Route length: {len(route)} nodes")
+
         coords = _extract_route_coords(G, route)
         stats  = _route_stats(G, route)
 
@@ -196,6 +200,40 @@ def get_scenic_route(
         return {"status": "error", "message": "No path found between these points."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+@app.get("/debug/graph-stats")
+def debug_graph_stats():
+    """Debug endpoint to check scenic scores in the graph."""
+    if not HAS_SCENIC:
+        return {"error": "Scenic graph not loaded"}
+    
+    scores = []
+    lengths = []
+    for u, v, key, data in G.edges(keys=True, data=True):
+        score = data.get("scenic_score", None)
+        length = data.get("length", None)
+        if score is not None:
+            scores.append(float(score))
+        if length is not None:
+            lengths.append(float(length))
+    
+    if not scores:
+        return {"error": "No scenic_score attributes found in graph"}
+    
+    import statistics
+    return {
+        "total_edges": G.number_of_edges(),
+        "edges_with_scenic_score": len(scores),
+        "scenic_score_min": min(scores),
+        "scenic_score_max": max(scores),
+        "scenic_score_mean": statistics.mean(scores),
+        "scenic_score_stdev": statistics.stdev(scores) if len(scores) > 1 else 0,
+        "sample_scores": scores[:20],
+        "length_min": min(lengths),
+        "length_max": max(lengths),
+        "length_mean": statistics.mean(lengths),
+    }
 
 
 @app.get("/health")
