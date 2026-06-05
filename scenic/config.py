@@ -20,10 +20,10 @@ STUDY_AREA_BBOX = (5.05, 52.05, 5.20, 52.15)
 # ---------------------------------------------------------------------------
 
 # BGT (Basisregistratie Grootschalige Topografie) — Kadaster WFS
-BGT_URL = "https://bgt.basisregistraties.overheid.nl/bgtws/wfs"
+BGT_URL = "https://api.pdok.nl/lv/bgt/ogc/v1_0/collections"
 
 # BAG (Basisregistraties Adressen en Gebouwen) — Kadaster WFS
-BAG_URL = "https://api.pdok.nl/lv/bag/ogc/v1/collections"
+BAG_URL = "https://api.pdok.nl/kadaster/bag/ogc/v2/collections"
 
 # RCE (Rijksdienst voor het Cultureel Erfgoed)(was eerst: "Atlas Leefomgeving") — GeoServer WFS)
 ATLAS_URL = "https://api.pdok.nl/lv/bag/ogc/v1/collections"
