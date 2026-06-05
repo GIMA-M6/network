@@ -111,34 +111,53 @@ def load_bgt_bag_features(polygon):
     """
     datasets = {}
     bounds = polygon.bounds
+    bbox_str = ",".join(map(str, bounds))
 
-    # BGT benches
+    # -------------------------
+    # BGT benches (meubilair)
+    # -------------------------
     try:
-        benches = gpd.read_file(config.BGT_URL, layer="meubilair", bbox=bounds)
-        datasets["bgt_benches"] = benches[benches["bgt_functie"] == "zitbank"]
+        url = f"{config.BGT_URL}/meubilair/items"
+        params = {"bbox": bbox_str, "f": "geojson", "limit": 1000}
+        benches = gpd.read_file(url, params=params)
+
+        datasets["bgt_benches"] = benches[
+            benches["bgt_functie"] == "zitbank"
+        ]
     except Exception as e:
         print(f"Failed to load BGT benches: {e}")
         datasets["bgt_benches"] = gpd.GeoDataFrame()
 
+    # -------------------------
     # BGT water
+    # -------------------------
     try:
-        datasets["bgt_water"] = gpd.read_file(config.BGT_URL, layer="waterdeel", bbox=bounds)
+        url = f"{config.BGT_URL}/waterdeel/items"
+        params = {"bbox": bbox_str, "f": "geojson", "limit": 1000}
+        datasets["bgt_water"] = gpd.read_file(url, params=params)
     except Exception as e:
         print(f"Failed to load BGT water: {e}")
         datasets["bgt_water"] = gpd.GeoDataFrame()
 
+    # -------------------------
     # BGT green
+    # -------------------------
     try:
-        datasets["bgt_green"] = gpd.read_file(
-            config.BGT_URL, layer="begroeidterreindeel", bbox=bounds
-        )
+        url = f"{config.BGT_URL}/begroeidterreindeel/items"
+        params = {"bbox": bbox_str, "f": "geojson", "limit": 1000}
+        datasets["bgt_green"] = gpd.read_file(url, params=params)
     except Exception as e:
         print(f"Failed to load BGT green: {e}")
         datasets["bgt_green"] = gpd.GeoDataFrame()
 
+    # -------------------------
     # BAG old buildings
+    # -------------------------
     try:
-        bag = gpd.read_file(config.BAG_URL, layer="pand", bbox=bounds)
+        url = f"{config.BAG_URL}/pand/items"
+        params = {"bbox": bbox_str, "f": "geojson", "limit": 1000}
+        bag = gpd.read_file(url, params=params)
+
         datasets["bag_oude_gebouwen"] = bag[
             bag["oorspronkelijk_bouwjaar"] < config.BAG_MAX_BUILD_YEAR
         ]
@@ -148,6 +167,7 @@ def load_bgt_bag_features(polygon):
 
     print("Loaded BGT + BAG features")
     return datasets
+
 
 
 # ---------------------------------------------------------------------------
