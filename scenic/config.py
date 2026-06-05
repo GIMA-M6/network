@@ -23,10 +23,10 @@ STUDY_AREA_BBOX = (5.05, 52.05, 5.20, 52.15)
 BGT_URL = "https://bgt.basisregistraties.overheid.nl/bgtws/wfs"
 
 # BAG (Basisregistraties Adressen en Gebouwen) — Kadaster WFS
-BAG_URL = "https://service.pdok.nl/kadaster/bag/wfs/v2_0?request=getCapabilities&service=WFS"
+BAG_URL = "https://api.pdok.nl/lv/bag/ogc/v1/collections"
 
 # RCE (Rijksdienst voor het Cultureel Erfgoed)(was eerst: "Atlas Leefomgeving") — GeoServer WFS)
-ATLAS_URL = "https://service.pdok.nl/rce/beschermde-gebieden-cultuurhistorie/wfs/v1_0?request=GetCapabilities&service=WFS"
+ATLAS_URL = "https://api.pdok.nl/lv/bag/ogc/v1/collections"
 
 # RIVM — GeoServer WFS
 RIVM_URL = "https://data.rivm.nl/geo/wfs?request=GetCapabilities&service=WFS"
@@ -66,7 +66,7 @@ BAG_MAX_BUILD_YEAR = 1900
 # ---------------------------------------------------------------------------
 
 # Directory where output files (GeoPackage, CSV) will be saved.
-OUTPUT_DIR = "output"
+OUTPUT_DIR = "C:\\GIMA\\Module 6\\Code\\network\\scenic\\results"
 
 # GeoPackage file name for the weighted layers.
 OUTPUT_GPKG = "utrecht_scenic_weighted.gpkg"
