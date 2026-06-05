@@ -23,20 +23,19 @@ STUDY_AREA_BBOX = (5.05, 52.05, 5.20, 52.15)
 BGT_URL = "https://bgt.basisregistraties.overheid.nl/bgtws/wfs"
 
 # BAG (Basisregistraties Adressen en Gebouwen) — Kadaster WFS
-BAG_URL = "https://service.pdok.nl/lv/bag/wfs/v2_0"
+BAG_URL = "https://service.pdok.nl/kadaster/bag/wfs/v2_0?request=getCapabilities&service=WFS"
 
 # RCE (Rijksdienst voor het Cultureel Erfgoed)(was eerst: "Atlas Leefomgeving") — GeoServer WFS)
-ATLAS_URL = "https://geoserver.cultureelerfgoed.nl/geoserver/wfs"
+ATLAS_URL = "https://service.pdok.nl/rce/beschermde-gebieden-cultuurhistorie/wfs/v1_0?request=GetCapabilities&service=WFS"
 
 # RIVM — GeoServer WFS
-RIVM_URL = "https://data.rivm.nl/geo/wfs"
+RIVM_URL = "https://data.rivm.nl/geo/wfs?request=GetCapabilities&service=WFS"
 
 # UtrechtOpen — GeoServer WFS
-UTRECHTOPEN_URL = "https://geoservices.cbs.nl/geoserver/wfs"
+UTRECHTOPEN_URL = "https://geodata.utrecht.nl/geoserver/UtrechtOpen/ows?service=WFS&version=1.0.0&request=GetCapabilities"
 
 # Erfgoedregistratie — GeoServer WFS
-ERFGOED_URL = "https://erfgoedregistratie.nl/geoserver/wfs"
-
+ERFGOED_URL = "https://data.geo.cultureelerfgoed.nl/openbaar/wfs?service=WFS&request=GetCapabilities"
 
 # ---------------------------------------------------------------------------
 # ATLAS LAYER NAMES
