@@ -1,11 +1,5 @@
 """
-data_loader.py — Load ALL scenic-relevant datasets for Utrecht.
-
-Groups:
-- OSM (artwork, memorials, viewpoints, fountains, ruins, benches, museums, boulevards, leisure)
-- BGT + BAG (benches, water, green, old buildings)
-- Atlas Leefomgeving (monuments, castles, mills, etc.)
-- UtrechtOpen + Erfgoedregistratie (beeldbepalende panden, gemeentelijk erfgoed)
+data_loader.py — Load ALL scenic-relevant datasets from LOCAL FILES.
 
 Output:
 - One dictionary: {layer_name: GeoDataFrame}
@@ -14,20 +8,44 @@ Output:
 import geopandas as gpd
 import osmnx as ox
 from shapely.geometry import box
+import os
 
 import config
 
+# ---------------------------------------------------------------------------
+# HELPER FUNCTIE: LOKAAL INLEZEN & FILTEREN OP GEBIED
+# ---------------------------------------------------------------------------
+def load_local_file(filepath, bounds=None):
+    """
+    Loads a local GIS file using a pathlib.Path object.
+    """
+    # Check existence using pathlib syntax
+    if not filepath.exists():
+        print(f"  [Warning] File not found: {filepath}")
+        return gpd.GeoDataFrame()
+
+    try:
+        # Convert Path object to string if older versions of Fiona require it,
+        # though modern GeoPandas accepts Path objects natively.
+        path_str = str(filepath)
+        
+        if bounds:
+            bbox_tuple = (bounds[0], bounds[1], bounds[2], bounds[3])
+            gdf = gpd.read_file(path_str, bbox=bbox_tuple, engine="pyogrio")
+        else:
+            gdf = gpd.read_file(path_str, engine="pyogrio")
+            
+        print(f"  -> Success: {len(gdf)} objects loaded from {filepath.name}")
+        return gdf
+    except Exception as e:
+        print(f"  [Error] Could not read {filepath.name}: {e}")
+        return gpd.GeoDataFrame()
 
 # ---------------------------------------------------------------------------
-# 0. STUDY AREA
+# 0. STUDY AREA (Blijft via OSM, want dat is heel betrouwbaar)
 # ---------------------------------------------------------------------------
 
 def load_study_area():
-    """
-    Load Utrecht administrative boundary from OSM.
-    Returns a Shapely polygon for use in data loading functions.
-    Falls back to the bounding box defined in config.py.
-    """
     try:
         tags = {"boundary": "administrative", "admin_level": "8", "name": "Utrecht"}
         gdf = ox.features_from_place(config.STUDY_AREA_NAME, tags)
@@ -39,35 +57,23 @@ def load_study_area():
             else:
                 polygon = geometry
             
-            # Extra controle of het daadwerkelijk een Polygon/MultiPolygon is
             if polygon.geom_type in ["Polygon", "MultiPolygon"]:
                 print(f"Loaded study area boundary from OSM: {config.STUDY_AREA_NAME}")
                 return polygon
     except Exception as e:
         print(f"OSM boundary query failed: {e}")
 
-    # FALLBACK: Maak expliciet een Shapely Polygon van de BBOX coördinaten
     print(f"Using fallback bbox: {config.STUDY_AREA_BBOX}")
-    
-    # config.STUDY_AREA_BBOX moet zijn: (minx, miny, maxx, maxy)
-    fallback_polygon = box(
-        config.STUDY_AREA_BBOX[0], 
-        config.STUDY_AREA_BBOX[1], 
-        config.STUDY_AREA_BBOX[2], 
-        config.STUDY_AREA_BBOX[3]
-    )
-    return fallback_polygon
+    return box(config.STUDY_AREA_BBOX[0], config.STUDY_AREA_BBOX[1], 
+               config.STUDY_AREA_BBOX[2], config.STUDY_AREA_BBOX[3])
 
 
 # ---------------------------------------------------------------------------
-# 1. OSM DATA
+# 1. OSM DATA (Blijft hetzelfde, OSMnx downloadt lokaal heel efficiënt)
 # ---------------------------------------------------------------------------
 
 def load_osm_features(polygon):
-    """
-    OSM: artwork, memorials, viewpoints, fountains, ruins, benches,
-         museums, theatres, leisure, boulevards.
-    """
+    print("\n--- Loading OSM Features ---")
     tags = {
         "tourism": ["artwork", "viewpoint", "museum"],
         "amenity": ["fountain", "bench", "theatre"],
@@ -95,135 +101,67 @@ def load_osm_features(polygon):
         "osm_benches":   _filter("amenity", "bench"),
         "osm_boulevard": boulevards,
     }
-
-    print("Loaded OSM features")
     return datasets
 
 
 # ---------------------------------------------------------------------------
-# 2. BGT + BAG DATA
+# 2. BGT + BAG DATA (LOKAAL)
 # ---------------------------------------------------------------------------
 
 def load_bgt_bag_features(polygon):
-    """
-    BGT: benches, water, green
-    BAG: old buildings (bouwjaar < config.BAG_MAX_BUILD_YEAR)
-    """
+    print("\n--- Loading Local BGT & BAG Data ---")
     datasets = {}
     bounds = polygon.bounds
-    bbox_str = ",".join(map(str, bounds))
 
-    # -------------------------
-    # BGT benches (meubilair)
-    # -------------------------
-    try:
-        url = f"{config.BGT_URL}/meubilair/items"
-        params = {"bbox": bbox_str, "f": "geojson", "limit": 1000}
-        benches = gpd.read_file(url, params=params)
+    # BGT Bankjes
+    benches = load_local_file(config.PATH_BGT_BENCHES, bounds)
+    if not benches.empty and "bgt_functie" in benches.columns:
+        datasets["bgt_benches"] = benches[benches["bgt_functie"] == "zitbank"]
+    else:
+        datasets["bgt_benches"] = benches
 
-        datasets["bgt_benches"] = benches[
-            benches["bgt_functie"] == "zitbank"
-        ]
-    except Exception as e:
-        print(f"Failed to load BGT benches: {e}")
-        datasets["bgt_benches"] = gpd.GeoDataFrame()
+    # BGT Water & Groen
+    datasets["bgt_water"] = load_local_file(config.PATH_BGT_WATER, bounds)
+    datasets["bgt_green"] = load_local_file(config.PATH_BGT_GREEN, bounds)
 
-    # -------------------------
-    # BGT water
-    # -------------------------
-    try:
-        url = f"{config.BGT_URL}/waterdeel/items"
-        params = {"bbox": bbox_str, "f": "geojson", "limit": 1000}
-        datasets["bgt_water"] = gpd.read_file(url, params=params)
-    except Exception as e:
-        print(f"Failed to load BGT water: {e}")
-        datasets["bgt_water"] = gpd.GeoDataFrame()
+    # BAG Oude Gebouwen
+    bag = load_local_file(config.PATH_BAG_PANDEN, bounds)
+    if not bag.empty and "oorspronkelijk_bouwjaar" in bag.columns:
+        # Zorg dat bouwjaar numeriek is voor de filter
+        bag["oorspronkelijk_bouwjaar"] = bag["oorspronkelijk_bouwjaar"].astype(int, errors='ignore')
+        datasets["bag_oude_gebouwen"] = bag[bag["oorspronkelijk_bouwjaar"] < config.BAG_MAX_BUILD_YEAR]
+    else:
+        datasets["bag_oude_gebouwen"] = bag
 
-    # -------------------------
-    # BGT green
-    # -------------------------
-    try:
-        url = f"{config.BGT_URL}/begroeidterreindeel/items"
-        params = {"bbox": bbox_str, "f": "geojson", "limit": 1000}
-        datasets["bgt_green"] = gpd.read_file(url, params=params)
-    except Exception as e:
-        print(f"Failed to load BGT green: {e}")
-        datasets["bgt_green"] = gpd.GeoDataFrame()
-
-    # -------------------------
-    # BAG old buildings
-    # -------------------------
-    try:
-        url = f"{config.BAG_URL}/pand/items"
-        params = {"bbox": bbox_str, "f": "geojson", "limit": 1000}
-        bag = gpd.read_file(url, params=params)
-
-        datasets["bag_oude_gebouwen"] = bag[
-            bag["oorspronkelijk_bouwjaar"] < config.BAG_MAX_BUILD_YEAR
-        ]
-    except Exception as e:
-        print(f"Failed to load BAG old buildings: {e}")
-        datasets["bag_oude_gebouwen"] = gpd.GeoDataFrame()
-
-    print("Loaded BGT + BAG features")
     return datasets
 
 
-
 # ---------------------------------------------------------------------------
-# 3. ATLAS LEEFOMGEVING
+# 3. ATLAS / RCE (LOKAAL)
 # ---------------------------------------------------------------------------
 
 def load_atlas_features(polygon):
-    """
-    Atlas Leefomgeving: monuments, castles, mills, etc.
-    """
+    print("\n--- Loading Local Atlas (RCE) Data ---")
     datasets = {}
-    bounds = polygon.bounds
-
-    # Atlas layers (defined in config.ATLAS_LAYER_MAP)
-    for key, layer in config.ATLAS_LAYER_MAP.items():
-        try:
-            datasets[key] = gpd.read_file(config.ATLAS_URL, layer=layer, bbox=bounds)
-        except Exception as e:
-            print(f"Failed to load {key} ({layer}): {e}")
-            datasets[key] = gpd.GeoDataFrame()
-
-    print("Loaded Atlas Leefomgeving features")
+    
+    datasets["atlas_rijksmonumenten"] = load_local_file(config.PATH_RCE_MONUMENTEN, polygon.bounds)
+    
     return datasets
 
 
 # ---------------------------------------------------------------------------
-# 4. UTRECHTOPEN + ERFGOEDREGISTRATIE
+# 4. UTRECHT LOKAAL ERFGOED (LOKAAL)
 # ---------------------------------------------------------------------------
 
 def load_utrechtopen_erfgoed_features(polygon):
-    """
-    UtrechtOpen: beeldbepalende panden (two possible layer name variants)
-    Erfgoedregistratie: gemeentelijk erfgoed
-    """
+    print("\n--- Loading Local Utrecht Erfgoed ---")
     datasets = {}
     bounds = polygon.bounds
 
-    for key, layer in [
-        ("utrecht_beeldbepalend_1", "utrechtopen:beeldbepalend_pand"),
-        ("utrecht_beeldbepalend_2", "utrechtopen:beeldbepalende_panden"),
-    ]:
-        try:
-            datasets[key] = gpd.read_file(config.UTRECHTOPEN_URL, layer=layer, bbox=bounds)
-        except Exception as e:
-            print(f"Failed to load {key} ({layer}): {e}")
-            datasets[key] = gpd.GeoDataFrame()
+    # Beeldbepalende Panden (Let op de _1 en _2 fallback uit je originele script)
+    datasets["utrecht_beeldbepalend_1"] = load_local_file(config.PATH_UTRECHT_BEELDBEPALEND, bounds)
+    datasets["erfgoed_gemeentelijk"]    = load_local_file(config.PATH_UTRECHT_GEMEENTELIJK, bounds)
 
-    try:
-        datasets["erfgoed_gemeentelijk"] = gpd.read_file(
-            config.ERFGOED_URL, layer="erfgoed", bbox=bounds
-        )
-    except Exception as e:
-        print(f"Failed to load erfgoed_gemeentelijk: {e}")
-        datasets["erfgoed_gemeentelijk"] = gpd.GeoDataFrame()
-
-    print("Loaded UtrechtOpen + Erfgoed features")
     return datasets
 
 
@@ -232,10 +170,6 @@ def load_utrechtopen_erfgoed_features(polygon):
 # ---------------------------------------------------------------------------
 
 def load_all_scenic_data() -> dict:
-    """
-    Run all loaders and return a single merged dict:
-        {layer_name: GeoDataFrame}
-    """
     polygon = load_study_area()
 
     datasets = {}
@@ -244,4 +178,5 @@ def load_all_scenic_data() -> dict:
     datasets.update(load_atlas_features(polygon))
     datasets.update(load_utrechtopen_erfgoed_features(polygon))
 
+    print("\n[SUCCES] Alle lokale datasets zijn verwerkt!")
     return datasets
