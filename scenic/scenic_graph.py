@@ -34,6 +34,8 @@ import numpy as np
 import osmnx as ox
 from shapely.geometry import LineString
 
+import config
+
 # ---------------------------------------------------------------------------
 # CONFIGURATION
 # ---------------------------------------------------------------------------
@@ -88,12 +90,15 @@ DECAY_K = 2.5
 # STEP 1 — LOAD GRAPH
 # ---------------------------------------------------------------------------
 
-def load_graph(path: str) -> nx.MultiDiGraph:
+def load_graph(path: Path) -> nx.MultiDiGraph:
     print(f"Loading graph from {path} …")
-    G = ox.load_graphml(path)
+    if not path.exists():
+        print(f"[ERROR] Graph file not found at {path}")
+        sys.exit(1)
+        
+    G = ox.load_graphml(str(path))
     print(f"  Nodes: {G.number_of_nodes():,}   Edges: {G.number_of_edges():,}")
     return G
-
 
 # ---------------------------------------------------------------------------
 # STEP 2 — LOAD SCENIC DATA
@@ -322,7 +327,7 @@ def enrich_graph(
     from scenic_weights import SCENIC_WEIGHT_LOOKUP
 
     # 1. Load graph
-    G = load_graph(r"C:\GIMA\Module 6\Code\network\hf_deploy\utrecht_network.graphml")
+    G = load_graph(r"C:\Users\oleg_\Documents\Offline_VSCode\scenic\utrecht_network.graphml")
 
     # 2. Load scenic data if not provided
     if datasets is None:
@@ -348,7 +353,7 @@ def enrich_graph(
     G = attach_scores_to_graph(G, edges_gdf, scenic_scores, alpha)
 
     # 6. Save
-    save_graph(G, r"C:\GIMA\Module 6\Code\network\hf_deploy\utrecht_network_scenic.graphml")
+    save_graph(G, r"C:\Users\oleg_\Documents\Offline_VSCode\scenic\utrecht_network_scenic.graphml")
 
     return G
 
@@ -359,16 +364,25 @@ def enrich_graph(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Enrich a Utrecht road graph with scenic weights.")
-    parser.add_argument("--input",  default="utrecht_network.graphml",        help="Input GraphML path")
-    parser.add_argument("--output", default="utrecht_network_scenic.graphml", help="Output GraphML path")
-    parser.add_argument("--alpha",  type=float, default=DEFAULT_ALPHA,        help="Scenic/distance balance (0–1)")
+    
+    default_input = config.BASE_DIR / "utrecht_network.graphml"
+    default_output = config.BASE_DIR / "utrecht_network_scenic.graphml"
+    
+    parser.add_argument("--input",  default=str(default_input),  help="Input GraphML path")
+    parser.add_argument("--output", default=str(default_output), help="Output GraphML path")
+    parser.add_argument("--alpha",  type=float, default=DEFAULT_ALPHA, help="Scenic/distance balance (0–1)")
+    
     args = parser.parse_args()
 
-    enrich_graph(args.input, args.output, alpha=args.alpha)
+    # Zet strings weer om naar Path objecten
+    in_path = Path(args.input)
+    out_path = Path(args.output)
 
-    # ===========================================================================
-    # GEOPACKAGE EXPORT
-    # ===========================================================================
+    enrich_graph(in_path, out_path, alpha=args.alpha)
+
+# ===========================================================================
+ # GEOPACKAGE EXPORT
+ # ===========================================================================
     try:
         print("\nNetwerk exporteren naar GeoPackage...")
         
