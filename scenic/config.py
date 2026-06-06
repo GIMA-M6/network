@@ -16,40 +16,47 @@ STUDY_AREA_BBOX = (5.05, 52.05, 5.20, 52.15)
 
 
 # ---------------------------------------------------------------------------
-# DATA SOURCE URLs
+# LOCAL DATA PATHS (Vervang deze paden met waar jouw bestanden staan!)
 # ---------------------------------------------------------------------------
 
-# BGT (Basisregistratie Grootschalige Topografie) — Kadaster WFS
-BGT_URL = "https://api.pdok.nl/lv/bgt/ogc/v1_0/collections"
+# Maak een variabele voor je hoofd-datamap, dat is makkelijker
+import os
+from pathlib import Path
 
-# BAG (Basisregistraties Adressen en Gebouwen) — Kadaster WFS
-BAG_URL = "https://api.pdok.nl/kadaster/bag/ogc/v2/collections"
+# BASE_DIR points to the directory containing config.py
+BASE_DIR = Path(__file__).resolve().parent
 
-# RCE (Rijksdienst voor het Cultureel Erfgoed)(was eerst: "Atlas Leefomgeving") — GeoServer WFS)
-ATLAS_URL = "https://api.pdok.nl/lv/bag/ogc/v1/collections"
+# Define your data and results directories relative to the project root
+DATA_DIR = BASE_DIR / "data"
+OUTPUT_DIR = BASE_DIR / "results"
 
-# RIVM — GeoServer WFS
-RIVM_URL = "https://data.rivm.nl/geo/wfs?request=GetCapabilities&service=WFS"
+# Automatically create the directories if they don't exist yet
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# UtrechtOpen — GeoServer WFS
-UTRECHTOPEN_URL = "https://geodata.utrecht.nl/geoserver/UtrechtOpen/ows?service=WFS&version=1.0.0&request=GetCapabilities"
+# BGT
+PATH_BGT_BENCHES = os.path.join(DATA_DIR, "bgt_straatmeubilair.geojson")
+PATH_BGT_WATER   = os.path.join(DATA_DIR, "bgt_waterdeel.geojson")
+PATH_BGT_GREEN   = os.path.join(DATA_DIR, "bgt_begroeid.geojson")
 
-# Erfgoedregistratie — GeoServer WFS
-ERFGOED_URL = "https://data.geo.cultureelerfgoed.nl/openbaar/wfs?service=WFS&request=GetCapabilities"
+# BAG
+PATH_BAG_PANDEN  = os.path.join(DATA_DIR, "bag_panden_utrecht.geojson")
+
+# RCE (Rijksmonumenten)
+PATH_RCE_MONUMENTEN = os.path.join(DATA_DIR, "rce_rijksmonumenten.geojson")
+
+# Utrecht Lokaal
+PATH_UTRECHT_BEELDBEPALEND = os.path.join(DATA_DIR, "utrecht_beeldbepalend.geojson")
+PATH_UTRECHT_GEMEENTELIJK  = os.path.join(DATA_DIR, "utrecht_gemeentelijk_erfgoed.geojson")
 
 # ---------------------------------------------------------------------------
 # ATLAS LAYER NAMES
 # ---------------------------------------------------------------------------
-# Maps internal dataset key → WFS layer name on the Atlas Leefomgeving service.
+# Maps internal dataset key → WFS layer name on the Atlas Leefomgeving service
 # Update these if the remote layer names change.
 
 ATLAS_LAYER_MAP = {
-    "atlas_rijksmonumenten":        "Rijksmonumenten",
-    "atlas_molens":                 "Molens",
-    "atlas_kastelen":               "Kastelen",
-    "atlas_groene_rijksmonumenten": "GroeneRijksmonumenten",
-    "atlas_grafheuvels":            "Grafheuvels",
-    "atlas_stadsgezichten":         "StadsEnDorpsGezichten",
+    "atlas_rijksmonumenten": "rijksmonumentpunten",
 }
 
 
@@ -65,11 +72,5 @@ BAG_MAX_BUILD_YEAR = 1900
 # OUTPUT
 # ---------------------------------------------------------------------------
 
-# Directory where output files (GeoPackage, CSV) will be saved.
-OUTPUT_DIR = "C:\\GIMA\\Module 6\\Code\\network\\scenic\\results"
-
-# GeoPackage file name for the weighted layers.
-OUTPUT_GPKG = "utrecht_scenic_weighted.gpkg"
-
-# CSV file name for the weight lookup table.
-OUTPUT_WEIGHT_CSV = "scenic_weight_lookup.csv"
+OUTPUT_GPKG = OUTPUT_DIR / "utrecht_scenic_weighted.gpkg"
+OUTPUT_WEIGHT_CSV = OUTPUT_DIR / "scenic_weight_lookup.csv"
