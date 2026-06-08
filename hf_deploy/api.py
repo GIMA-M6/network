@@ -155,34 +155,23 @@ def get_scenic_route(
             "status": "error",
             "message": "Scenic graph not available."
         }
-
     try:
         start_node = ox.nearest_nodes(G, start_lon, start_lat)
         end_node   = ox.nearest_nodes(G, end_lon,   end_lat)
 
-        # DEBUG: Sample some edge scenic scores
-        sample_scores = []
-        for u, v, key, data in list(G.edges(keys=True, data=True))[:10]:
-            score = data.get("scenic_score", 0.0)
-            sample_scores.append(score)
-        print(f"[DEBUG] Sample scenic_scores from graph: {sample_scores}")
-        print(f"[DEBUG] Alpha: {alpha}")
+        def dynamic_scenic_cost(u, v, edge_data):
+            length = float(edge_data.get("length", 1.0))
+            raw_score = float(edge_data.get("scenic_score", 0.0))
 
-       def dynamic_scenic_cost(u, v, edge_data):
-        length = float(edge_data.get("length", 1.0))
-        raw_score = float(edge_data.get("scenic_score", 0.0))
-    
-        if alpha == 0:
-            return length
-    
-        safe_score = max(raw_score, 1e-6)
-        blended_score = alpha * safe_score + (1.0 - alpha) * 1.0
-        return length / blended_score
+            if alpha == 0:
+                return length
+
+            amplified = raw_score ** 0.3
+            safe_score = max(amplified, 1e-6)
+            blended_score = alpha * safe_score + (1.0 - alpha) * 1.0
+            return length / blended_score
 
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
-        
-        print(f"[DEBUG] Route length: {len(route)} nodes")
-
         coords = _extract_route_coords(G, route)
         stats  = _route_stats(G, route)
 
@@ -192,7 +181,6 @@ def get_scenic_route(
             "alpha":  alpha,
             **stats,
         }
-
     except nx.NetworkXNoPath:
         return {"status": "error", "message": "No path found between these points."}
     except Exception as e:
