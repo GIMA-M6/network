@@ -159,19 +159,21 @@ def get_scenic_route(
         start_node = ox.nearest_nodes(G, start_lon, start_lat)
         end_node   = ox.nearest_nodes(G, end_lon,   end_lat)
 
-        def dynamic_scenic_cost(u, v, edge_data):
-            length = float(edge_data.get("length", 1.0))
-            raw_score = float(edge_data.get("scenic_score", 0.0))
-        
-            if alpha == 0:
-                return length
-        
-            # Use binary-ish boost: edges with any scenic value get heavily rewarded
-            # This makes even small scores matter a lot
-            amplified = raw_score ** 0.1
-            safe_score = max(amplified, 1e-6)
-            blended_score = alpha * safe_score + (1.0 - alpha) * 1.0
-            return length / blended_score
+       def dynamic_scenic_cost(u, v, edge_data):
+    # edge_data is a dict of parallel edges {0: {...}, 1: {...}}
+    # Pick the one with shortest length
+    data = min(edge_data.values(), key=lambda x: x.get("length", float("inf")))
+    
+    length = float(data.get("length", 1.0))
+    raw_score = float(data.get("scenic_score", 0.0))
+
+    if alpha == 0:
+        return length
+
+    amplified = raw_score ** 0.1
+    safe_score = max(amplified, 1e-6)
+    blended_score = alpha * safe_score + (1.0 - alpha) * 1.0
+    return length / blended_score
 
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
         coords = _extract_route_coords(G, route)
