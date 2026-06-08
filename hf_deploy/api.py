@@ -191,13 +191,54 @@ def get_scenic_route(
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
         coords = _extract_route_coords(G, route)
         stats  = _route_stats(G, route)
+        # -------------------------------------------------------------------
+        # Scenic explanation: aggregate breakdown per category
+        # -------------------------------------------------------------------
+        breakdown_totals = {}
+        top_segments = []
+
+        for i in range(len(route) - 1):
+            u = route[i]
+            v = route[i + 1]
+            edges = G.get_edge_data(u, v)
+            edge_data = min(edges.values(), key=lambda x: x.get("length", float("inf")))
+
+            # Scenic breakdown per edge (als aanwezig)
+            breakdown = edge_data.get("scenic_breakdown", {})
+            for key, value in breakdown.items():
+                breakdown_totals[key] = breakdown_totals.get(key, 0.0) + float(value)
+
+            # Verzamel top scenic edges
+            scenic_score = float(edge_data.get("scenic_score", 0.0))
+            top_segments.append({
+                "from": int(u),
+                "to": int(v),
+                "score": scenic_score
+            })
+
+        # Sorteer top scenic edges
+        top_segments = sorted(top_segments, key=lambda x: x["score"], reverse=True)[:5]
+
+        # Maak een menselijke uitleg
+        dominant = sorted(breakdown_totals.items(), key=lambda x: x[1], reverse=True)
+        if dominant:
+            top_factor = dominant[0][0].replace("_", " ")
+            explanation = f"Deze route is vooral scenic door veel '{top_factor}'."
+        else:
+            explanation = "Geen scenic factoren gevonden."
 
         return {
             "status": "success",
-            "route":  coords,
-            "alpha":  alpha,
+            "route": coords,
+            "alpha": alpha,
             **stats,
+            "scenic_explanation": {
+                "breakdown": breakdown_totals,
+                "top_segments": top_segments,
+                "summary": explanation
         }
+}
+
     except nx.NetworkXNoPath:
         return {"status": "error", "message": "No path found between these points."}
     except Exception as e:
