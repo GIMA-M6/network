@@ -168,19 +168,16 @@ def get_scenic_route(
         print(f"[DEBUG] Sample scenic_scores from graph: {sample_scores}")
         print(f"[DEBUG] Alpha: {alpha}")
 
-        def dynamic_scenic_cost(u, v, edge_data):
-            """
-            Match the exact formula from scenic_graph.py line 288:
-            cost = length / (alpha * scenic_score + (1 - alpha))
-            """
-            length = float(edge_data.get("length", 1.0))
-            raw_score = float(edge_data.get("scenic_score", 0.0))
-            
-            if alpha == 0:
-                return length
-            
-            cost = length / (alpha * raw_score + (1.0 - alpha))
-            return cost
+       def dynamic_scenic_cost(u, v, edge_data):
+        length = float(edge_data.get("length", 1.0))
+        raw_score = float(edge_data.get("scenic_score", 0.0))
+    
+        if alpha == 0:
+            return length
+    
+        safe_score = max(raw_score, 1e-6)
+        blended_score = alpha * safe_score + (1.0 - alpha) * 1.0
+        return length / blended_score
 
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
         
