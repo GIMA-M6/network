@@ -46,7 +46,26 @@ else:
         f"  {PLAIN_GRAPH_PATH}"
     )
 
-
+# Normalise scenic scores to full 0-1 range at startup
+if HAS_SCENIC:
+    all_scores = []
+    for u, v, key, data in G.edges(keys=True, data=True):
+        score = data.get("scenic_score", None)
+        if score is not None:
+            all_scores.append(float(score))
+    
+    if all_scores:
+        score_min = min(all_scores)
+        score_max = max(all_scores)
+        score_range = score_max - score_min
+        
+        if score_range > 0:
+            for u, v, key, data in G.edges(keys=True, data=True):
+                if "scenic_score" in data:
+                    raw = float(data["scenic_score"])
+                    data["scenic_score"] = (raw - score_min) / score_range
+        
+        print(f"[STARTUP] Scenic scores normalised: min={score_min:.4f}, max={score_max:.4f}")
 # ---------------------------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------------------------
