@@ -162,11 +162,13 @@ def get_scenic_route(
         def dynamic_scenic_cost(u, v, edge_data):
             length = float(edge_data.get("length", 1.0))
             raw_score = float(edge_data.get("scenic_score", 0.0))
-
+        
             if alpha == 0:
                 return length
-
-            amplified = raw_score ** 0.3
+        
+            # Use binary-ish boost: edges with any scenic value get heavily rewarded
+            # This makes even small scores matter a lot
+            amplified = raw_score ** 0.1
             safe_score = max(amplified, 1e-6)
             blended_score = alpha * safe_score + (1.0 - alpha) * 1.0
             return length / blended_score
