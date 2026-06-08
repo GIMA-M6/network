@@ -231,3 +231,15 @@ def health():
         "nodes":        G.number_of_nodes(),
         "edges":        G.number_of_edges(),
     }
+
+@app.get("/debug/edge-sample")
+def debug_edge_sample():
+    samples = []
+    for u, v, key, data in list(G.edges(keys=True, data=True))[:20]:
+        score = data.get("scenic_score", "MISSING")
+        samples.append({
+            "type": type(score).__name__,
+            "raw_value": str(score),
+            "as_float": float(score) if score != "MISSING" else None
+        })
+    return {"samples": samples}
