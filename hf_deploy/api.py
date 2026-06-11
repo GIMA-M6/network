@@ -132,9 +132,21 @@ def _route_stats(G: nx.MultiDiGraph, route_nodes: list) -> dict:
         weighted_score = sum(s * l for s, l in zip(scenic_scores, edge_lengths)) / total_length
         mean_scenic_score = round(weighted_score, 3)
 
+    # Score omzetten naar percentage (0 tot 100 punten) voor de website
+    final_score = round((sum(scenic_scores) / len(scenic_scores)) * 100, 1) if scenic_scores else None
+
+    # Tijd berekenen in minuten (op basis van 5 km/u wandelsnelheid)
+    # 5 km/u = 5000 meter / 60 minuten = 83.33 meter per minuut
+    time_minutes = round(total_length / 83.33)
+    
+    # Korte routes (bijv. 10 meter), zetten we het minimum op 1 minuut
+    if time_minutes < 1:
+        time_minutes = 1
+
     return {
         "distance_m": round(total_length),
-        "mean_scenic_score": mean_scenic_score,
+        "time_minutes": time_minutes,  # Deze sturen we nu mee naar de frontend!
+        "mean_scenic_score": final_score,
     }
 
 # ---------------------------------------------------------------------------
