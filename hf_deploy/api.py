@@ -46,7 +46,6 @@ else:
         f"  {PLAIN_GRAPH_PATH}"
     )
 
-# Normalise scenic scores to full 0-1 range at startup
 if HAS_SCENIC:
     all_scores = []
     for u, v, key, data in G.edges(keys=True, data=True):
@@ -126,20 +125,15 @@ def _route_stats(G: nx.MultiDiGraph, route_nodes: list) -> dict:
         else:
             scenic_scores.append(0.0)
 
-    # Weighted mean: weight each score by the edge's distance proportion
     mean_scenic_score = None
     if scenic_scores and total_length > 0:
         weighted_score = sum(s * l for s, l in zip(scenic_scores, edge_lengths)) / total_length
         mean_scenic_score = round(weighted_score, 3)
 
-    # Score omzetten naar percentage (0 tot 100 punten) voor de website
     final_score = round((sum(scenic_scores) / len(scenic_scores)) * 100, 1) if scenic_scores else None
 
-    # Tijd berekenen in minuten (op basis van 5 km/u wandelsnelheid)
-    # 5 km/u = 5000 meter / 60 minuten = 83.33 meter per minuut
     time_minutes = round(total_length / 83.33)
     
-    # Korte routes (bijv. 10 meter), zetten we het minimum op 1 minuut
     if time_minutes < 1:
         time_minutes = 1
 
@@ -203,9 +197,7 @@ def get_scenic_route(
         route  = nx.shortest_path(G, start_node, end_node, weight=dynamic_scenic_cost)
         coords = _extract_route_coords(G, route)
         stats  = _route_stats(G, route)
-        # -------------------------------------------------------------------
-        # Scenic explanation: aggregate breakdown per category
-        # -------------------------------------------------------------------
+
         breakdown_totals = {}
         top_segments = []
 
@@ -215,12 +207,10 @@ def get_scenic_route(
             edges = G.get_edge_data(u, v)
             edge_data = min(edges.values(), key=lambda x: x.get("length", float("inf")))
 
-            # Scenic breakdown per edge (als aanwezig)
             breakdown = edge_data.get("scenic_breakdown", {})
             for key, value in breakdown.items():
                 breakdown_totals[key] = breakdown_totals.get(key, 0.0) + float(value)
 
-            # Verzamel top scenic edges
             scenic_score = float(edge_data.get("scenic_score", 0.0))
             top_segments.append({
                 "from": int(u),
@@ -228,16 +218,14 @@ def get_scenic_route(
                 "score": scenic_score
             })
 
-        # Sorteer top scenic edges
         top_segments = sorted(top_segments, key=lambda x: x["score"], reverse=True)[:5]
 
-        # Maak een menselijke uitleg
         dominant = sorted(breakdown_totals.items(), key=lambda x: x[1], reverse=True)
         if dominant:
             top_factor = dominant[0][0].replace("_", " ")
-            explanation = f"Deze route is vooral scenic door veel '{top_factor}'."
+            explanation = f"Mostly scenic due to '{top_factor}'."
         else:
-            explanation = "Geen scenic factoren gevonden."
+            explanation = "No scenic factors found."
 
         return {
             "status": "success",
